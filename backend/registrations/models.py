@@ -21,6 +21,12 @@ class Registration(models.Model):
     email = models.EmailField()
     phone_number = models.CharField(max_length=20, help_text="WhatsApp Number with country code (e.g., +919876543210)")
     preference = models.CharField(max_length=10, choices=DUTY_CHOICES)
+    status = models.CharField(
+        max_length=20, 
+        choices=[('PENDING', 'Pending'), ('ALLOTTED', 'Allotted')],
+        default='PENDING',
+        db_default='PENDING'
+    )
     whatsapp_sent = models.BooleanField(default=False, help_text="Track initial registration WhatsApp")
     created_at = models.DateTimeField(auto_now_add=True)
     

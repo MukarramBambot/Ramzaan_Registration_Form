@@ -107,44 +107,37 @@ def send_registration_confirmation_task(self, registration_id):
         return  # Don't retry if record doesn't exist
     
     try:
-        # Idempotency check: If WhatsApp already sent, skip to avoid duplicates
-        # Note: We rely on whatsapp_sent primarily for idempotency of the whole task
-        if registration.whatsapp_sent:
-            logger.info(f"[Task] send_registration_confirmation: WhatsApp already sent for registration {registration_id}. Skipping.")
-            return
-        
-        # 1. Send WhatsApp notification (primary requirement)
-        logger.info(f"[Task] send_registration_confirmation: Sending WhatsApp to {registration.full_name} ({registration.phone_number})")
-        whatsapp_ok = send_whatsapp_message_for_registration(registration)
-
-        # Handle Meta sandbox: do not retry if recipient not whitelisted
-        if whatsapp_ok == "SANDBOX":
-            logger.warning(f"[Task] send_registration_confirmation: Meta sandbox - recipient not allowed for registration {registration_id}. Skipping retries.")
-            return
-
-        if whatsapp_ok:
-            # Mark as sent in DB to prevent duplicates
-            registration.whatsapp_sent = True
-            registration.save(update_fields=['whatsapp_sent'])
-            logger.info(f"[Task] send_registration_confirmation: WhatsApp sent successfully for registration {registration_id}")
-        else:
-            # WhatsApp failed - log and retry
-            logger.warning(f"[Task] send_registration_confirmation: WhatsApp failed for registration {registration_id}. Retrying...")
-            # Celery will retry this task up to max_retries times
-            raise self.retry(exc=Exception("WhatsApp delivery failed"), countdown=60)
-        
-        # 2. Send email notification (secondary - don't retry task if only email fails)
+        # 1. Send email notification (Independent step)
         try:
             logger.info(f"[Task] send_registration_confirmation: Sending confirmation email to {registration.email}")
-            email_ok = send_registration_email(registration)
-            if email_ok:
-                logger.info(f"[Task] send_registration_confirmation: Email sent successfully for registration {registration_id}")
-            else:
-                logger.warning(f"[Task] send_registration_confirmation: Email send returned False for registration {registration_id}")
+            send_registration_email(registration)
+            logger.info(f"[Task] send_registration_confirmation: Email attempted for {registration_id}")
         except Exception as email_e:
-            # Email failure should NOT cause task retry - just log and continue
-            logger.error(f"[Task] send_registration_confirmation: Exception while sending email for registration {registration_id}: {str(email_e)}")
-            # Don't raise - email is secondary
+            logger.error(f"[Task] send_registration_confirmation: Email failed for {registration_id}: {str(email_e)}")
+
+        # 2. Idempotency check for WhatsApp
+        if registration.whatsapp_sent:
+            return
+        
+        # 3. Send WhatsApp notification
+        logger.info(f"[Task] send_registration_confirmation: Sending WhatsApp to {registration.phone_number}")
+        whatsapp_ok = send_whatsapp_message_for_registration(registration)
+
+        if whatsapp_ok == "SANDBOX": return
+        if whatsapp_ok:
+            registration.whatsapp_sent = True
+            registration.save(update_fields=['whatsapp_sent'])
+        else:
+            # Handle retry if in Celery, otherwise just log
+            if hasattr(self, 'retry') and self is not None:
+                raise self.retry(exc=Exception("WhatsApp delivery failed"), countdown=60)
+            logger.warning(f"[Task] send_registration_confirmation: WhatsApp failed (no retry possible).")
+
+    except Exception as exc:
+        if isinstance(exc, self.MaxRetriesExceededError if hasattr(self, 'MaxRetriesExceededError') else Exception):
+             logger.error(f"Max retries or fatal error: {str(exc)}")
+        else:
+             raise
 
     except self.MaxRetriesExceededError:
         logger.error(f"[Task] send_registration_confirmation: Max retries exceeded for registration {registration_id}")
@@ -189,40 +182,36 @@ def send_duty_allotment_notification_task(self, duty_assignment_id):
     try:
         user = assignment.assigned_user
         
-        # Idempotency check: If already sent, skip to prevent duplicate WhatsApp messages
-        if assignment.allotment_notification_sent:
-            logger.info(f"[Task] send_duty_allotment_notification: Message already sent for duty {duty_assignment_id}. Skipping.")
-            return
-        
-        # 1. Send WhatsApp notification
-        logger.info(f"[Task] send_duty_allotment_notification: Sending WhatsApp to {user.full_name} ({user.phone_number}) for duty on {assignment.duty_date}")
-        ok = send_whatsapp_message_for_allotment(assignment)
-
-        # If Meta sandbox causes skip, do not retry
-        if ok == "SANDBOX":
-            logger.warning(f"[Task] send_duty_allotment_notification: Meta sandbox - recipient not allowed for duty {duty_assignment_id}. Skipping retries.")
-            return
-
-        if ok:
-            # Mark as sent to prevent duplicates on subsequent signal triggers
-            assignment.allotment_notification_sent = True
-            assignment.save(update_fields=['allotment_notification_sent'])
-            logger.info(f"[Task] send_duty_allotment_notification: WhatsApp sent successfully for duty {duty_assignment_id}")
-        else:
-            # WhatsApp failed - log and retry
-            logger.warning(f"[Task] send_duty_allotment_notification: WhatsApp failed for duty {duty_assignment_id}. Retrying...")
-            raise self.retry(exc=Exception(f"WhatsApp delivery failed for duty {duty_assignment_id}"), countdown=60)
-
-        # 2. Send Email notification (secondary)
+        # 1. Send Email notification (Independent step)
         try:
             logger.info(f"[Task] send_duty_allotment_notification: Sending allotment email to {user.email}")
-            email_ok = send_allotment_email(assignment)
-            if email_ok:
-                logger.info(f"[Task] send_duty_allotment_notification: Email sent successfully for duty {duty_assignment_id}")
-            else:
-                logger.warning(f"[Task] send_duty_allotment_notification: Email send returned False for duty {duty_assignment_id}")
+            send_allotment_email(assignment)
         except Exception as email_e:
-            logger.error(f"[Task] send_duty_allotment_notification: Exception while sending email for duty {duty_assignment_id}: {str(email_e)}")
+            logger.error(f"[Task] send_duty_allotment_notification: Email failed: {str(email_e)}")
+
+        # 2. Idempotency check for WhatsApp
+        if assignment.allotment_notification_sent:
+            return
+        
+        # 3. Send WhatsApp notification
+        logger.info(f"[Task] send_duty_allotment_notification: Sending WhatsApp to {user.phone_number}")
+        ok = send_whatsapp_message_for_allotment(assignment)
+
+        if ok == "SANDBOX": return
+        if ok:
+            assignment.allotment_notification_sent = True
+            assignment.save(update_fields=['allotment_notification_sent'])
+        else:
+            if hasattr(self, 'retry') and self is not None:
+                raise self.retry(exc=Exception("WhatsApp failed"), countdown=60)
+            logger.warning(f"[Task] send_duty_allotment_notification: WhatsApp failed (no retry possible).")
+
+    except Exception as exc:
+        # Avoid crashing background thread on Celery specific errors when running in-process
+        if 'Retry' in str(type(exc)): raise
+        logger.error(f"Task fatal error: {str(exc)}")
+        if not isinstance(exc, DutyAssignment.DoesNotExist) and hasattr(self, 'retry'):
+            raise self.retry(exc=exc, countdown=60)
 
     except self.MaxRetriesExceededError:
         logger.error(f"[Task] send_duty_allotment_notification: Max retries exceeded for duty {duty_assignment_id}. Giving up.")

@@ -5,7 +5,7 @@
 
 // ✅ CONFIGURATION: Change this to your production Django API URL
 // e.g., 'https://api.yourdomain.com'
-window.API_BASE = 'http://localhost:8000';
+window.API_BASE = 'https://api.madrasjamaatportal.org';
 
 
 // Helper to get tokens
@@ -51,6 +51,11 @@ async function apiFetch(endpoint, options = {}) {
     // Default requireAuth to true unless specified
     const requireAuth = options.requireAuth !== false;
 
+    // Optional timeout in milliseconds. If set to >0, the request will be aborted
+    // after the timeout and a timeout error will be thrown with `isTimeout=true`.
+    const timeout = options.timeout || 0;
+    if (options.timeout) delete options.timeout;
+
     // Prepare headers
     const headers = new Headers(options.headers || {});
 
@@ -71,12 +76,42 @@ async function apiFetch(endpoint, options = {}) {
         }
     }
 
-    const url = `${window.API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    let url = `${window.API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
-    let response = await fetch(url, {
+    // Add cache-buster to GET requests
+    if (!options.method || options.method === 'GET') {
+        const sep = url.includes('?') ? '&' : '?';
+        url += `${sep}v=${Date.now()}`;
+    }
+
+    // Use AbortController to support timeouts
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const fetchOptions = {
         ...options,
         headers,
-    });
+        signal,
+    };
+
+    let timeoutId = null;
+    if (timeout > 0) {
+        timeoutId = setTimeout(() => controller.abort(), timeout);
+    }
+
+    let response;
+    try {
+        response = await fetch(url, fetchOptions);
+    } catch (err) {
+        // Normalize AbortError as a timeout for callers
+        if (err.name === 'AbortError') {
+            const toErr = new Error('Request timed out');
+            toErr.isTimeout = true;
+            throw toErr;
+        }
+        throw err;
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+    }
 
     // Auto-refresh on 401
     if (response.status === 401 && requireAuth) {

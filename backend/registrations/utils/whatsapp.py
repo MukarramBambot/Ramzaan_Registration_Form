@@ -1,5 +1,5 @@
 """
-Twilio WhatsApp integration for PRODUCTION (Content Templates).
+WhatsApp integration via official Meta Cloud API.
 
 Handles:
 - Registration confirmation
@@ -9,39 +9,29 @@ Handles:
 
 import json
 import logging
-import os
-
+import requests
 from django.conf import settings
-from twilio.rest import Client
-from twilio.base.exceptions import TwilioRestException
 
 logger = logging.getLogger("registrations")
 
 # -------------------------------------------------------------------
-# Twilio Client (single instance)
+# Meta Configuration
 # -------------------------------------------------------------------
 
-TWILIO_ACCOUNT_SID = getattr(settings, "TWILIO_ACCOUNT_SID", "")
-TWILIO_AUTH_TOKEN = getattr(settings, "TWILIO_AUTH_TOKEN", "")
-TWILIO_WHATSAPP_FROM = getattr(settings, "TWILIO_WHATSAPP_FROM", "")
+META_WA_PHONE_NUMBER_ID = getattr(settings, "META_WA_PHONE_NUMBER_ID", "")
+META_WA_ACCESS_TOKEN = getattr(settings, "META_WA_ACCESS_TOKEN", "")
+META_WA_API_VERSION = getattr(settings, "META_WA_API_VERSION", "v18.0")
 
-if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
-    twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-else:
-    twilio_client = None
-    logger.error("[WhatsApp] Twilio credentials missing in settings")
-
-
-# -------------------------------------------------------------------
-# Helpers
-# -------------------------------------------------------------------
+# Template Names (Meta uses names, not SIDs)
+TEMPLATE_FORM_SUBMITTED = "form_submitted_notification"
+TEMPLATE_ALLOTMENT = "allotment_confirmed"
+TEMPLATE_REMINDER = "event_reminder_24hrs"
 
 def normalize_phone_number(number):
     """
-    Normalize phone number to E.164 format for WhatsApp.
-
-    - Strips non-digits
-    - Defaults to India (+91) for 10-digit numbers
+    Normalize phone number to digits only (Meta API requirement).
+    - Strips +, space, dashes
+    - Ensures country code is present (assumes 91 if 10 digits)
     """
     if not number:
         return None
@@ -49,64 +39,62 @@ def normalize_phone_number(number):
     digits = "".join(filter(str.isdigit, str(number)))
 
     if len(digits) == 10:
-        return f"+91{digits}"
-    if len(digits) == 12 and digits.startswith("91"):
-        return f"+{digits}"
-    if len(digits) > 10:
-        return f"+{digits}"
+        return f"91{digits}"
+    return digits
 
-    return None
-
-
-def send_whatsapp_template(to_number, content_sid, content_variables):
+def send_meta_whatsapp_template(to_number, template_name, components):
     """
-    Core WhatsApp sender using Twilio Content Templates.
-
+    Core WhatsApp sender using Meta Cloud API.
+    
     Args:
-        to_number (str): Raw phone number
-        content_sid (str): HX... template SID
-        content_variables (dict): Template variables
+        to_number (str): recipient phone number
+        template_name (str): The name of the approved Meta template
+        components (list): List of component dicts (body parameters)
     """
-    if not twilio_client:
-        logger.error("[WhatsApp] Twilio client not initialized")
+    if not META_WA_ACCESS_TOKEN or not META_WA_PHONE_NUMBER_ID:
+        logger.error("[WhatsApp] Meta API credentials missing in settings")
         return False
 
-    e164_number = normalize_phone_number(to_number)
-    if not e164_number:
+    phone_number = normalize_phone_number(to_number)
+    if not phone_number:
         logger.error(f"[WhatsApp] Invalid phone number: {to_number}")
         return False
 
+    url = f"https://graph.facebook.com/{META_WA_API_VERSION}/{META_WA_PHONE_NUMBER_ID}/messages"
+    
+    headers = {
+        "Authorization": f"Bearer {META_WA_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": phone_number,
+        "type": "template",
+        "template": {
+            "name": template_name,
+            "language": {
+                "code": "en"
+            },
+            "components": components
+        }
+    }
+
     try:
-        logger.info(
-            f"[WhatsApp] Sending template {content_sid} → {e164_number} "
-            f"vars={content_variables}"
-        )
+        logger.info(f"[WhatsApp] Sending Meta template '{template_name}' to {phone_number}")
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response_data = response.json()
 
-        message = twilio_client.messages.create(
-            from_=TWILIO_WHATSAPP_FROM,
-            to=f"whatsapp:{e164_number}",
-            content_sid=content_sid,
-            content_variables=json.dumps(content_variables),
-        )
-
-        logger.info(f"[WhatsApp] ✓ SENT SID={message.sid}")
-        return True
-
-    except TwilioRestException as e:
-        logger.error(
-            f"[WhatsApp] Twilio error: {e.msg} (code={e.code})"
-        )
-
-        # Sandbox-specific failure
-        if e.code == 63016:
-            return "SANDBOX"
-
-        return False
+        if response.status_code == 200:
+            logger.info(f"[WhatsApp] ✓ SENT (Meta ID: {response_data.get('messages', [{}])[0].get('id')})")
+            return True
+        else:
+            logger.error(f"[WhatsApp] Meta API Error: {response.status_code} - {response.text}")
+            return False
 
     except Exception as e:
-        logger.exception(f"[WhatsApp] Unexpected error: {str(e)}")
+        logger.exception(f"[WhatsApp] Unexpected error during Meta API call: {str(e)}")
         return False
-
 
 # -------------------------------------------------------------------
 # Public Notification APIs
@@ -115,72 +103,60 @@ def send_whatsapp_template(to_number, content_sid, content_variables):
 def send_registration_notification(registration):
     """
     Template: form_submitted_notification
-    {{1}} -> Full Name
+    V1: Full Name
     """
-    content_sid = getattr(settings, "TWILIO_TEMPLATE_FORM_SUBMITTED", "")
-    if not content_sid:
-        logger.error("[WhatsApp] Missing TWILIO_TEMPLATE_FORM_SUBMITTED")
-        return False
-
-    return send_whatsapp_template(
-        to_number=registration.phone_number,
-        content_sid=content_sid,
-        content_variables={
-            "1": registration.full_name
-        },
-    )
-
+    components = [
+        {
+            "type": "body",
+            "parameters": [
+                {"type": "text", "text": registration.full_name}
+            ]
+        }
+    ]
+    return send_meta_whatsapp_template(registration.phone_number, TEMPLATE_FORM_SUBMITTED, components)
 
 def send_duty_allotment_notification(duty_assignment):
     """
     Template: allotment_confirmed
-    {{1}} -> Full Name
-    {{2}} -> Date (12 March 2026)
-    {{3}} -> Time (6:30 AM)
+    V1: Full Name
+    V2: Date
+    V3: Time
     """
-    content_sid = getattr(settings, "TWILIO_TEMPLATE_ALLOTMENT", "")
-    if not content_sid:
-        logger.error("[WhatsApp] Missing TWILIO_TEMPLATE_ALLOTMENT")
-        return False
-
     user = duty_assignment.assigned_user
-
     date_str = duty_assignment.duty_date.strftime("%d %B %Y")
-
+    
     if hasattr(duty_assignment, "slot") and duty_assignment.slot:
         time_str = duty_assignment.slot.time_label
     else:
         time_str = duty_assignment.get_namaaz_type_display()
 
-    return send_whatsapp_template(
-        to_number=user.phone_number,
-        content_sid=content_sid,
-        content_variables={
-            "1": user.full_name,
-            "2": date_str,
-            "3": time_str,
-        },
-    )
-
+    components = [
+        {
+            "type": "body",
+            "parameters": [
+                {"type": "text", "text": user.full_name},
+                {"type": "text", "text": date_str},
+                {"type": "text", "text": time_str}
+            ]
+        }
+    ]
+    return send_meta_whatsapp_template(user.phone_number, TEMPLATE_ALLOTMENT, components)
 
 def send_event_reminder_24hrs(registration, date, time_label):
     """
     Template: event_reminder_24hrs
-    {{1}} -> Full Name
-    {{2}} -> Date
-    {{3}} -> Time
+    V1: Full Name
+    V2: Date
+    V3: Time
     """
-    content_sid = getattr(settings, "TWILIO_TEMPLATE_REMINDER", "")
-    if not content_sid:
-        logger.error("[WhatsApp] Missing TWILIO_TEMPLATE_REMINDER")
-        return False
-
-    return send_whatsapp_template(
-        to_number=registration.phone_number,
-        content_sid=content_sid,
-        content_variables={
-            "1": registration.full_name,
-            "2": str(date),
-            "3": str(time_label),
-        },
-    )
+    components = [
+        {
+            "type": "body",
+            "parameters": [
+                {"type": "text", "text": registration.full_name},
+                {"type": "text", "text": str(date)},
+                {"type": "text", "text": str(time_label)}
+            ]
+        }
+    ]
+    return send_meta_whatsapp_template(registration.phone_number, TEMPLATE_REMINDER, components)

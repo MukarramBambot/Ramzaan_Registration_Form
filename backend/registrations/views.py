@@ -141,12 +141,8 @@ class RegistrationViewSet(viewsets.ModelViewSet):
                     logger.error(f"File upload failed for {registration}: {str(file_e)}")
                     # We continue with other files if one fails, or could raise error
             
-            # Sync to Google Sheets (Safe Background Task)
-            # This is now production-safe via transaction.on_commit
-            transaction.on_commit(lambda: safe_task_delay(sync_to_sheets_task, registration.id))
-
-            # Background notifications are now handled automatically via Django signals
-            # for better decoupled logic and to support creations from Django Admin.
+            # Background notifications & Sheet sync are now handled automatically 
+            # via Django signals for better decoupled logic.
             
             # Return full registration data
             output_serializer = RegistrationSerializer(registration)
@@ -218,14 +214,11 @@ class RegistrationViewSet(viewsets.ModelViewSet):
                     "name": file.audition_display_name
                 })
 
-            # Decide status based on duties existence
-            status_val = "ALLOTTED" if duties else "PENDING"
-            
             return Response({
                 "full_name": registration.full_name,
                 "its_number": registration.its_number,
                 "register_for": registration.get_preference_display(),
-                "status": status_val,
+                "status": registration.status,
                 "duties": duties,
                 "audition_files": audition_files
             })
@@ -234,6 +227,21 @@ class RegistrationViewSet(viewsets.ModelViewSet):
             return Response(
                 {'error': 'No registration found for this ITS number'},
                 status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated, IsAdminUser])
+    def sync_to_sheets(self, request):
+        """Trigger manual bulk sync to Google Sheets."""
+        from .google_sheets import sync_all_to_sheets
+        logger.info(f"API: Manual Google Sheets sync triggered by {request.user.username}")
+        
+        success = sync_all_to_sheets()
+        if success:
+            return Response({'message': 'Successfully synced all registrations to Google Sheets.'})
+        else:
+            return Response(
+                {'error': 'Failed to sync to Google Sheets. Check server logs for details.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     @action(detail=True, methods=['get'])

@@ -21,6 +21,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
             'email',
             'phone_number',
             'preference',
+            'status',
             'created_at',
             'audition_files'
         ]
@@ -37,8 +38,12 @@ class RegistrationCreateSerializer(serializers.ModelSerializer):
             'its_number',
             'email',
             'phone_number',
-            'preference'
+            'preference',
+            'status'
         ]
+        extra_kwargs = {
+            'status': {'default': 'PENDING'}
+        }
 
 
 class DutyAssignmentSerializer(serializers.ModelSerializer):

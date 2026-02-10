@@ -4,7 +4,6 @@ djangorestframework
 django-cors-headers
 python-dotenv
 gunicorn>=21.2.0
-twilio
 djangorestframework-simplejwt>=5.3.0
 
 # Database

@@ -4,6 +4,7 @@ Handles scheduling, sending, and tracking of duty reminders.
 """
 
 from datetime import datetime, timedelta
+import threading
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
@@ -360,31 +361,76 @@ def safe_task_delay(task_func, *args, **kwargs):
     """
     Safely triggers a Celery task or falls back to synchronous execution 
     if Redis/Celery is unavailable or disabled.
-    Prevents 500 Internal Server Errors due to ConnectionRefusedError.
+    
+    Args:
+        task_func: The task function to call or delay
+        *args: Variable length argument list for the task
+        non_blocking (bool): If True, will NOT fallback to synchronous execution 
+                             when Celery fails. This prevents UI freezes.
+                             It also uses a thread to fire the delay() call
+                             so the primary worker isn't blocked by Redis latency.
+        **kwargs: Arbitrary keyword arguments (including non_blocking)
     """
     from django.conf import settings
     
+    non_blocking = kwargs.pop('non_blocking', False)
     celery_enabled = getattr(settings, 'CELERY_ENABLED', True)
     
     if not celery_enabled:
+        if non_blocking:
+            logger.info(f"Celery disabled: skipped non-blocking task {task_func.__name__}")
+            return None
+        
         logger.info(f"Celery disabled: executing task {task_func.__name__} synchronously as configured.")
         try:
-            # Execute synchronously in this process only when CELERY_ENABLED=False
             return task_func(*args, **kwargs)
         except Exception as e:
             logger.error(f"Synchronous fallback for {task_func.__name__} failed: {str(e)}")
             return None
 
+    def _enqueue_task():
+        try:
+            # Try calling .delay() if it exists (for shared_task decorated functions)
+            if hasattr(task_func, 'delay'):
+                try:
+                    task_func.delay(*args, **kwargs)
+                    logger.info(f"Task {task_func.__name__} enqueued to Celery successfully.")
+                    return
+                except Exception as celery_err:
+                    logger.warning(f"Celery delay failed, falling back to in-process execution: {str(celery_err)}")
+            
+            # If delay() failed or doesn't exist, we run the function directly
+            # Note: For @shared_task(bind=True), the first argument is 'self'.
+            # We pass the task instance itself if available.
+            if hasattr(task_func, 'run'):
+                logger.debug(f"Running task {task_func.__name__} in-process fallback.")
+                task_func.run(*args, **kwargs)
+            else:
+                task_func(*args, **kwargs)
+            logger.info(f"Task {task_func.__name__} executed in-process (background thread).")
+            
+        except Exception as e:
+            logger.error(f"In-process background task {task_func.__name__} failed: {str(e)}")
+
+    if non_blocking:
+        # FIRE AND FORGET: Use a thread so the main request returns INSTANTLY
+        # even if Redis connectivity is slow or timing out.
+        # If Redis is DOWN, the thread will handle the synchronous execution.
+        thread = threading.Thread(target=_enqueue_task)
+        thread.daemon = True
+        thread.start()
+        return "THREADED_FALLBACK"
+
     try:
-        # Try calling .delay() if it exists (for shared_task decorated functions)
         if hasattr(task_func, 'delay'):
             return task_func.delay(*args, **kwargs)
         else:
             return task_func(*args, **kwargs)
     except Exception as e:
-        logger.warning(f"Celery connection failed, falling back to synchronous: {str(e)}")
+        logger.warning(f"Celery connection failed: {str(e)}")
         try:
-            # Fallback to synchronous if Redis is down
+            # Fallback to synchronous if Redis is down AND NOT non_blocking
+            logger.info(f"Falling back to synchronous execution for {task_func.__name__}")
             return task_func(*args, **kwargs)
         except Exception as sync_e:
             logger.error(f"Fallback synchronous execution also failed: {str(sync_e)}")

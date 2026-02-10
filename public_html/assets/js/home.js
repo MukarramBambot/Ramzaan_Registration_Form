@@ -55,25 +55,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Preference is radio, auto handled by FormData
 
+        let isRedirecting = false;
+
         try {
+            // Use a sensible client timeout for uploads; if the connection is interrupted
+            // we'll fall back to a verification poll so users are not left in limbo.
             const response = await apiFetch('/api/registrations/', {
                 method: 'POST',
                 body: formData,
-                requireAuth: false // Registration is public
+                requireAuth: false, // Registration is public
+                timeout: 20000 // 20s
             });
+
+            // CRITICAL: Successfully created (201) or OK (200) - Short-circuit to success page
+            if (response.status === 200 || response.status === 201) {
+                console.log('Registration success:', response.status);
+                isRedirecting = true;
+                window.location.href = '/success.php';
+                return; // Exit immediately, redirection is in progress
+            }
 
             const contentType = response.headers.get("content-type");
             const isJson = contentType && contentType.includes("application/json");
 
-            if (response.ok) {
-                // Success
-                window.location.href = '/success.php';
-                return;
-            }
-
             // Error Handling
             if (isJson) {
-                const errorData = await response.json();
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData = { detail: "An unexpected error occurred and the server response could not be parsed." };
+                }
 
                 // Handle Duplicate ITS
                 if (response.status === 400 && errorData.its_number) {
@@ -85,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             message: "You have already registered for Sherullah 1447H with this ITS number.",
                             confirmLabel: 'OK'
                         });
-                        setSubmitting(false);
                         return;
                     }
                 }
@@ -116,19 +127,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (err) {
-            // console.error('Submission error:', err); // Silenced for production
-            const networkMsg = "Network error: Cannot reach the server. Please check your internet connection.";
+            console.error('Submission technical error:', err);
+                // --- DISTRIBUTED CONSISTENCY RECOVERY ---
+                // Use a short polling loop to verify whether the registration actually made
+                // it into the database despite the network/connection error. This avoids
+                // false failures while preventing double-submits.
+                const itsNumber = formData.get('its_number');
+                console.log(`Checking if registration exists for ITS: ${itsNumber} after connection error...`);
 
-            showDialog({
-                variant: 'danger',
-                title: 'Connection Error',
-                message: networkMsg,
-                confirmLabel: 'Retry Later'
-            });
+                const found = await pollRegistrationExists(itsNumber, { attempts: 12, interval: 2000 });
+
+                if (found) {
+                    console.log('Recovery Success: Registration found in database despite connection error.');
+                    isRedirecting = true;
+                    window.location.href = '/success.php';
+                    return;
+                }
+
+                // If not found after polling, inform user and re-enable the form.
+                const networkMsg = err && err.isTimeout
+                    ? 'Submission timed out. The server may be busy. We checked for your registration but did not find it.'
+                    : 'Network error: Cannot reach the server. Please check your internet connection.';
+
+                showDialog({
+                    variant: 'danger',
+                    title: 'Connection Error',
+                    message: networkMsg,
+                    confirmLabel: 'Retry Later'
+                });
         } finally {
-            if (!document.getElementById('success-view').classList.contains('hidden')) {
-                // If success, keep loading state off but don't re-enable form
-            } else {
+            // ONLY reset submitting state if we are NOT redirecting.
+            // This prevents the button from "flicking" back to active while the next page is loading.
+            if (!isRedirecting) {
                 setSubmitting(false);
             }
         }
@@ -144,6 +174,43 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             submitBtn.innerHTML = `Submit`;
         }
+    }
+
+    /**
+     * Poll the search endpoint to determine whether a registration exists.
+     * Returns true as soon as a 200 is returned, false if not found after attempts.
+     */
+    async function pollRegistrationExists(itsNumber, opts = {}) {
+        const attempts = opts.attempts || 10;
+        const interval = opts.interval || 2000;
+
+        if (!itsNumber) return false;
+
+        for (let i = 0; i < attempts; i++) {
+            try {
+                const res = await apiFetch(`/api/registrations/search/?its=${encodeURIComponent(itsNumber)}`, {
+                    method: 'GET',
+                    requireAuth: false,
+                    timeout: 5000
+                });
+
+                if (res.status === 200) return true;
+                if (res.status === 404) {
+                    // Not found yet - wait and retry
+                } else {
+                    // For other statuses, don't fail immediately; keep polling briefly
+                    console.warn('Unexpected status during verification poll:', res.status);
+                }
+            } catch (e) {
+                // Network error for the poll attempt - just log and retry
+                console.warn('Verification poll attempt failed:', e);
+            }
+
+            // Wait before next attempt
+            await new Promise(r => setTimeout(r, interval));
+        }
+
+        return false;
     }
 
     function setSubmitted(success) {

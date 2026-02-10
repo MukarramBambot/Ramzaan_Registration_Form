@@ -5,7 +5,11 @@ import logging
 
 from .models import Registration, DutyAssignment
 from .utils import safe_task_delay
-from .tasks import send_registration_confirmation_task, send_duty_allotment_notification_task
+from .tasks import (
+    send_registration_confirmation_task, 
+    send_duty_allotment_notification_task,
+    sync_to_sheets_task
+)
 from .utils.email_notifications import send_registration_email, send_allotment_email
 
 logger = logging.getLogger('registrations')
@@ -28,20 +32,21 @@ def registration_post_save(sender, instance, created, **kwargs):
     def schedule_tasks():
         """Enqueue tasks after transaction commits.
         """
-        # 1. Email Notification (Synchronous / Direct Call - FIX OPTION A)
-        try:
-            logger.info("EMAIL FUNCTION CALLED")
-            send_registration_email(instance)
-        except Exception as e:
-            logger.error(f"Email failed: {e}")
+        # 1. Notifications are handled in the background task
 
-        # 2. WhatsApp Notification (Async via Celery)
+        # 2. WhatsApp + Email Notification (Async via Celery)
         try:
-            logger.info(f"[OnCommit] Enqueueing send_registration_confirmation_task for registration {instance.id}")
-            result = safe_task_delay(send_registration_confirmation_task, instance.id)
-            logger.info(f"[OnCommit] Task scheduled for registration {instance.id}: {result}")
+            logger.info(f"[OnCommit] Enqueueing notifications for registration {instance.id}")
+            safe_task_delay(send_registration_confirmation_task, instance.id, non_blocking=True)
         except Exception as e:
-            logger.error(f"[OnCommit] Failed to schedule task for registration {instance.id}: {str(e)}")
+            logger.error(f"[OnCommit] Failed to schedule notification task for registration {instance.id}: {str(e)}")
+
+        # 3. Google Sheets Sync (Async via Celery)
+        try:
+            logger.info(f"[OnCommit] Enqueueing sync_to_sheets_task for registration {instance.id}")
+            safe_task_delay(sync_to_sheets_task, instance.id, non_blocking=True)
+        except Exception as e:
+            logger.error(f"[OnCommit] Failed to schedule sheet sync task for registration {instance.id}: {str(e)}")
     
     try:
         # Schedule the function to run AFTER this transaction commits.
@@ -69,17 +74,12 @@ def duty_assignment_post_save(sender, instance, created, **kwargs):
     def schedule_tasks():
         """Enqueue tasks after DB commit.
         """
-        # 1. Email Notification (Synchronous / Direct Call)
-        try:
-            logger.info("EMAIL FUNCTION CALLED")
-            send_allotment_email(instance)
-        except Exception as e:
-            logger.error(f"Email failed: {e}")
+        # 1. Notifications are handled in the background task
 
         # 2. WhatsApp Notification (Async via Celery)
         try:
             logger.info(f"[OnCommit] Enqueueing send_duty_allotment_notification_task for duty {instance.id}")
-            result = safe_task_delay(send_duty_allotment_notification_task, instance.id)
+            result = safe_task_delay(send_duty_allotment_notification_task, instance.id, non_blocking=True)
             logger.info(f"[OnCommit] Task scheduled for duty {instance.id}: {result}")
         except Exception as e:
             logger.error(f"[OnCommit] Failed to schedule task for duty {instance.id}: {str(e)}")

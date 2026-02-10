@@ -46,7 +46,7 @@
                         <input
                             type="text"
                             id="fullName"
-                            name="fullName"
+                            name="full_name"
                             required
                             class="w-full h-12 px-4 bg-white border border-[#DBE2EF] rounded focus:outline-none focus:border-[#3F72AF] focus:ring-1 focus:ring-[#3F72AF] transition-all text-[#112D4E] placeholder-[#9CA3AF]"
                             placeholder="Enter your full name"
@@ -61,7 +61,7 @@
                         <input
                             type="text"
                             id="itsNumber"
-                            name="itsNumber"
+                            name="its_number"
                             required
                             class="w-full h-12 px-4 bg-white border border-[#DBE2EF] rounded focus:outline-none focus:border-[#3F72AF] focus:ring-1 focus:ring-[#3F72AF] transition-all text-[#112D4E] placeholder-[#9CA3AF]"
                             placeholder="Enter your ITS number"
@@ -91,7 +91,7 @@
                         <input
                             type="tel"
                             id="phoneNumber"
-                            name="phoneNumber"
+                            name="phone_number"
                             required
                             class="w-full h-12 px-4 bg-white border border-[#DBE2EF] rounded focus:outline-none focus:border-[#3F72AF] focus:ring-1 focus:ring-[#3F72AF] transition-all text-[#112D4E] placeholder-[#9CA3AF]"
                             placeholder="Enter your WhatsApp number for reminders"
@@ -157,13 +157,6 @@
 
                 </div>
             </form>
-
-            <div class="text-center">
-                <p class="text-[#9CA3AF] text-xs">
-                    © Sherullah 1447H • Azaan & Takhbira Registration
-                </p>
-            </div>
-
         </div>
     </div>
 </div>

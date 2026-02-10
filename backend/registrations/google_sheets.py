@@ -61,3 +61,69 @@ def sync_registration_to_sheets(registration):
 
     except Exception as e:
         logger.error(f"Failed to sync registration to Google Sheets: {str(e)}")
+
+def sync_all_to_sheets():
+    """
+    Clear existing data and sync all registrations to Google Sheets.
+    """
+    try:
+        from .models import Registration
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+
+        creds_path = getattr(settings, 'GOOGLE_SERVICE_ACCOUNT_FILE', None)
+        spreadsheet_id = getattr(settings, 'GOOGLE_SHEET_ID', None)
+
+        if not creds_path or not spreadsheet_id or not os.path.exists(creds_path):
+            logger.error("Sync All failed: Google Sheets configuration error or missing creds file.")
+            return False
+
+        scopes = ['https://www.googleapis.com/auth/spreadsheets']
+        creds = service_account.Credentials.from_service_account_file(creds_path, scopes=scopes)
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
+
+        # Fetch all registrations with audition files
+        registrations = Registration.objects.all().prefetch_related('audition_files').order_by('created_at')
+        
+        values = []
+        for reg in registrations:
+            files = reg.audition_files.all()
+            file_urls = ", ".join([f"{settings.SITE_URL}{f.audition_file_path.url}" if hasattr(settings, 'SITE_URL') else f.audition_file_path.url for f in files])
+            
+            values.append([
+                reg.full_name,
+                reg.its_number,
+                reg.email,
+                reg.phone_number,
+                reg.get_preference_display(),
+                reg.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                file_urls
+            ])
+
+        if not values:
+            logger.info("Sync All: No registrations to sync.")
+            return True
+
+        # Clear existing data (A2:G1000)
+        sheet.values().clear(
+            spreadsheetId=spreadsheet_id,
+            range='A2:G1000',
+            body={}
+        ).execute()
+
+        # Update with new values
+        body = {'values': values}
+        result = sheet.values().update(
+            spreadsheetId=spreadsheet_id,
+            range='A2',
+            valueInputOption='RAW',
+            body=body
+        ).execute()
+
+        logger.info(f"Successfully bulk synced {len(values)} registrations to Google Sheets.")
+        return True
+
+    except Exception as e:
+        logger.error(f"Bulk sync to Google Sheets failed: {str(e)}")
+        return False
