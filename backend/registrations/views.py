@@ -235,12 +235,14 @@ class RegistrationViewSet(viewsets.ModelViewSet):
         from .google_sheets import sync_all_to_sheets
         logger.info(f"API: Manual Google Sheets sync triggered by {request.user.username}")
         
-        success = sync_all_to_sheets()
+        success, result = sync_all_to_sheets()
         if success:
-            return Response({'message': 'Successfully synced all registrations to Google Sheets.'})
+            if result == 0:
+                return Response({'message': 'Sync successful (Headers only). No registration records found in database.'})
+            return Response({'message': f'Successfully synced {result} registrations to Google Sheets.'})
         else:
             return Response(
-                {'error': 'Failed to sync to Google Sheets. Check server logs for details.'},
+                {'error': f'Failed to sync to Google Sheets: {result}. Check server logs for details.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

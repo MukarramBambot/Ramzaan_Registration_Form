@@ -45,3 +45,8 @@ Thumbs.db
 # Project Specific
 *.bak
 *.tmp
+
+# Secrets
+*.json
+credentials/
+google-sheets.json

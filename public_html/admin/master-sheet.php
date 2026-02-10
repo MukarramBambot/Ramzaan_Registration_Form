@@ -77,7 +77,7 @@
                         <tr>
                             <td colspan="7" class="px-6 py-12 text-center text-[#9CA3AF]">
                                 <div class="flex flex-col items-center">
-                                    <div class="animate-spin mb-4">${ICONS.loader2}</div>
+                                    <div id="initial-loader" class="mb-4"></div>
                                     <p>Loading registrations...</p>
                                 </div>
                             </td>
@@ -102,9 +102,11 @@
         // Initialize icons
         const refreshIcon = document.getElementById('refresh-icon');
         const syncIcon = document.getElementById('sync-icon');
+        const initialLoader = document.getElementById('initial-loader');
         
         if (refreshIcon) refreshIcon.innerHTML = ICONS.loader2.replace('animate-spin', '').replace('<svg', '<svg class="w-4 h-4"');
         if (syncIcon) syncIcon.innerHTML = ICONS.fileSpreadsheet.replace('<svg', '<svg class="w-4 h-4"');
+        if (initialLoader) initialLoader.innerHTML = ICONS.loader2;
         
         loadMasterSheet();
     });
@@ -237,7 +239,7 @@
                 </td>
                 <td class="px-6 py-4 text-right">
                     <button 
-                        onclick='viewAuditions(${JSON.stringify(reg.audition_files)})'
+                        onclick='viewAuditions(${JSON.stringify(reg.id)}, ${JSON.stringify(reg.audition_files)})'
                         class="px-3 py-1.5 rounded bg-white border border-[#DBE2EF] text-[#3F72AF] text-xs font-bold hover:bg-[#3F72AF] hover:text-white hover:border-[#3F72AF] transition-all flex items-center gap-1.5 ml-auto"
                     >
                         ${ICONS.eye.replace('<svg', '<svg class="w-3.5 h-3.5"')}
@@ -265,7 +267,7 @@
         }
     }
 
-    function viewAuditions(files) {
+    function viewAuditions(regId, files) {
         if (!files || files.length === 0) {
             showDialog({
                 title: 'No Files',

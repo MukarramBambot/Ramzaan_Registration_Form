@@ -14,6 +14,8 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
+GOOGLE_SHEETS_CREDENTIALS = os.getenv("GOOGLE_SHEETS_CREDENTIALS")
+
 # Load environment variables
 load_dotenv()
 
@@ -30,7 +32,14 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'api.madrasjamaatportal.org,localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [
+    "madrasjamaatportal.org",
+    "www.madrasjamaatportal.org",
+    "31.97.63.149",
+    "localhost",
+    "127.0.0.1",
+]
+
 
 
 # Application definition
@@ -278,17 +287,15 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 
 # ==========================================
-# WHATSAPP CONFIGURATION (TWILIO)
+# WHATSAPP CONFIGURATION 
 # ==========================================
 
-# Twilio WhatsApp Sandbox
-# Get these from Twilio Console (https://console.twilio.com/)
-TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', '')
-TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', '')
-TWILIO_WHATSAPP_FROM = os.getenv('TWILIO_WHATSAPP_FROM', '')  # Format: whatsapp:+<number>
-TWILIO_TEMPLATE_FORM_SUBMITTED = os.getenv('TWILIO_TEMPLATE_FORM_SUBMITTED', '')
-TWILIO_TEMPLATE_ALLOTMENT = os.getenv('TWILIO_TEMPLATE_ALLOTMENT', '')
-TWILIO_TEMPLATE_REMINDER = os.getenv('TWILIO_TEMPLATE_REMINDER', '')
+# 📲 WhatsApp (Meta WhatsApp Cloud API)
+WHATSAPP_PROVIDER="meta"
+META_WA_PHONE_NUMBER_ID=os.getenv("META_WA_PHONE_NUMBER_ID")
+META_WA_ACCESS_TOKEN=os.getenv("META_WA_ACCESS_TOKEN")
+META_WA_BUSINESS_ACCOUNT_ID=os.getenv("META_WA_BUSINESS_ACCOUNT_ID")
+META_WA_API_VERSION=os.getenv("META_WA_API_VERSION", "v18.0")
 
 # ==========================================
 # REMINDER CONFIGURATION
@@ -304,7 +311,12 @@ REMINDER_TIME_MINUTE = int(os.getenv('REMINDER_TIME_MINUTE', '0'))
 
 # GOOGLE SHEETS
 GOOGLE_SHEET_ID = os.environ.get('GOOGLE_SHEET_ID', 'your-spreadsheet-id-here')
-GOOGLE_SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, 'google_service_account.json')
+GOOGLE_SERVICE_ACCOUNT_FILE = os.environ.get(
+    "GOOGLE_SHEETS_CREDENTIALS",
+    os.path.join(BASE_DIR, "credentials/google-sheets.json")
+)
+
+
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 # ==========================================
