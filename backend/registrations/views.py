@@ -8,18 +8,20 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import transaction
+from django.db.models import Prefetch
 from django.utils import timezone
 import logging
 
 from .models import (
     Registration, AuditionFile, DutyAssignment, 
-    UnlockLog, Reminder, ReminderLog
+    UnlockLog, Reminder, ReminderLog, KhidmatRequest
 )
 from .serializers import (
     RegistrationSerializer, RegistrationCreateSerializer,
     AuditionFileSerializer, DutyAssignmentSerializer,
     DutyAssignmentCreateSerializer, UnlockSerializer,
-    UnlockLogSerializer, ReminderSerializer, ReminderLogSerializer
+    UnlockLogSerializer, ReminderSerializer, ReminderLogSerializer,
+    KhidmatRequestSerializer
 )
 from .utils import (
     create_reminder_for_assignment, cancel_reminders_for_assignment,
@@ -85,84 +87,71 @@ class RegistrationViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """
         Create new registration with audition file uploads.
-        Max 5 audio files allowed.
+        Standardized error reporting and Celery task triggering.
         """
-        import time
-        start_time = time.time()
-        logger.info("API: Registration create request received")
-
         try:
-            # Check for duplicate ITS Number (manual check for custom error message)
+            # 1. Custom Validation (Duplicate ITS)
             its_number = request.data.get('its_number')
-            if Registration.objects.filter(its_number=its_number).exists():
+            if its_number and Registration.objects.filter(its_number=its_number).exists():
                 return Response(
-                    {'error': f'ITS Number {its_number} is already registered.'},
+                    {'its_number': ['ITS Number already registered.']},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Check for duplicate Email
-            email = request.data.get('email')
-            if Registration.objects.filter(email=email).exists():
-                return Response(
-                    {'error': f'Email {email} is already registered.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Validate registration data
+            # 2. Serializer Validation & Save
             serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+            if not serializer.is_valid():
+                logger.warning(f"Registration validation failed: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
-            # Create registration
             registration = serializer.save()
             
-            # Handle audition file uploads
-            files = request.FILES.getlist('audition_files')
+            # 3. Handle Files
+            files = request.FILES.getlist('audition_files') or request.FILES.getlist('media_files')
             
-            if len(files) > 5:
+            if not files:
+                 logger.warning(f"Registration failed: No file upload for {registration}")
+                 # We delete the registration if no file is provided (since we are in atomic block, 
+                 # we could also just return error and it will rollback)
+                 return Response(
+                     {'error': 'At least one audition file is required.'},
+                     status=status.HTTP_400_BAD_REQUEST
+                 )
+
+            if len(files) > 6:
                 return Response(
-                    {'error': 'Maximum 5 audition files allowed'},
+                    {'error': 'Maximum 6 audition files allowed'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            if len(files) == 0:
-                return Response(
-                    {'error': 'At least 1 audition file required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Create audition file records
+            # 4. Save Audition Files
             for file in files:
-                try:
-                    AuditionFile.objects.create(
-                        registration=registration,
-                        audition_file_path=file
-                    )
-                except Exception as file_e:
-                    logger.error(f"File upload failed for {registration}: {str(file_e)}")
-                    # We continue with other files if one fails, or could raise error
+                AuditionFile.objects.create(
+                    registration=registration,
+                    audition_file_path=file
+                )
             
-            # Background notifications & Sheet sync are now handled automatically 
-            # via Django signals for better decoupled logic.
-            
-            # Return full registration data
+            # 5. Schedule Background Tasks (Passed as IDs)
+            # We use on_commit to ensure tokens/transaction are finalized
+            def schedule_registration_tasks():
+                logger.info(f"Triggering background tasks for registration {registration.id}")
+                safe_task_delay(send_registration_confirmation_task, registration.id, non_blocking=True)
+                safe_task_delay(sync_to_sheets_task, registration.id, non_blocking=True)
+
+            transaction.on_commit(schedule_registration_tasks)
+
+            # 6. Return standard serialized data
             output_serializer = RegistrationSerializer(registration)
-            
-            logger.info(f"New registration created: {registration}")
-            
-            return Response(
-                output_serializer.data,
-                status=status.HTTP_201_CREATED
-            )
+            logger.info(f"Registration successful: {registration}")
+            return Response(output_serializer.data, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            logger.error(f"Registration failed: {str(e)}")
+            import traceback
+            logger.error(f"CRITICAL REGISTRATION FAILURE: {str(e)}\n{traceback.format_exc()}")
             return Response(
-                {'error': 'Registration failed. Please try again later.'},
+                {'error': 'Registration failed. Please contact support if this persists.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        finally:
-            duration = time.time() - start_time
-            logger.info(f"API: Registration create finished in {duration:.4f}s")
     
     @action(detail=False, methods=['get'])
     def search(self, request):
@@ -176,9 +165,18 @@ class RegistrationViewSet(viewsets.ModelViewSet):
             )
         
         try:
-            # Optimize with prefetch
+            # Optimize with prefetch for duties and their pending requests
             registration = Registration.objects.prefetch_related(
-                'duty_assignments', 
+                Prefetch(
+                    'duty_assignments',
+                    queryset=DutyAssignment.objects.all().prefetch_related(
+                        Prefetch(
+                            'requests',
+                            queryset=KhidmatRequest.objects.filter(status='pending'),
+                            to_attr='pending_requests'
+                        )
+                    )
+                ),
                 'audition_files'
             ).get(its_number=its_number)
             
@@ -193,10 +191,18 @@ class RegistrationViewSet(viewsets.ModelViewSet):
                 namaaz = parts[0] if len(parts) > 0 else display_name
                 duty_type = parts[1] if len(parts) > 1 else ""
                 
+                # Check for pending requests
+                pending_request = getattr(duty, 'pending_requests', [])
+                request_status = pending_request[0].status if pending_request else None
+                request_type = pending_request[0].request_type if pending_request else None
+                
                 duties.append({
+                    "id": duty.id,
                     "date": duty.duty_date.strftime('%d/%m/%Y'),
                     "namaaz": namaaz,
-                    "type": duty_type
+                    "type": duty_type,
+                    "request_status": request_status,
+                    "request_type": request_type
                 })
             
             # Map audition files
@@ -295,6 +301,13 @@ class DutyAssignmentViewSet(viewsets.ModelViewSet):
             assigned_user_id=user_id,
             locked=True
         )
+        
+        # Update registration status to ALLOTTED
+        registration = Registration.objects.get(id=user_id)
+        if registration.status != 'ALLOTTED':
+            registration.status = 'ALLOTTED'
+            registration.save(update_fields=['status'])
+            logger.info(f"Updated registration {registration.id} status to ALLOTTED")
         
         # Create automatic reminder
         reminder = create_reminder_for_assignment(assignment)
@@ -462,3 +475,168 @@ class ReminderLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ReminderLog.objects.all().select_related('reminder')
     serializer_class = ReminderLogSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
+
+
+class KhidmatRequestViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for Khidmat (duty) cancellation and reallocation requests.
+    
+    Endpoints:
+    - POST /api/khidmat-requests/ - Create new request (user)
+    - GET /api/khidmat-requests/?status=pending - List requests (admin)
+    - POST /api/khidmat-requests/{id}/approve/ - Approve request (admin)
+    - POST /api/khidmat-requests/{id}/reject/ - Reject request (admin)
+    """
+    queryset = KhidmatRequest.objects.all().select_related(
+        'assignment',
+        'assignment__assigned_user'
+    ).order_by('-created_at')
+    serializer_class = KhidmatRequestSerializer
+    
+    def get_permissions(self):
+        """
+        Allow unauthenticated users to create requests.
+        Require admin authentication for approve/reject.
+        """
+        if self.action in ['create']:
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdminUser()]
+    
+    def get_queryset(self):
+        """
+        Filter by status if provided in query params.
+        Example: /api/khidmat-requests/?status=pending
+        """
+        queryset = super().get_queryset()
+        status_filter = self.request.query_params.get('status', None)
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new khidmat request.
+        Validates that user has active duty assignment.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        logger.info(f"Khidmat request created: {serializer.data['id']} - {serializer.data['request_type']}")
+        
+        return Response(
+            {
+                'success': True,
+                'message': 'Request submitted successfully. Admin will review shortly.',
+                'request_id': serializer.data['id']
+            },
+            status=status.HTTP_201_CREATED
+        )
+    
+    @action(detail=True, methods=['post'])
+    @transaction.atomic
+    def approve(self, request, pk=None):
+        """
+        Approve a khidmat request.
+        
+        For cancellation requests:
+        - Delete duty assignment
+        - Update registration status to PENDING if no other duties
+        - Cancel associated reminders
+        
+        For reallocation requests:
+        - Mark as approved (admin will manually reassign)
+        
+        All updates are atomic to prevent partial state.
+        """
+        khidmat_request = self.get_object()
+        
+        if khidmat_request.status != 'pending':
+            return Response(
+                {'error': 'Request has already been processed.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        assignment = khidmat_request.assignment
+        registration = assignment.assigned_user
+        request_type = khidmat_request.request_type
+        
+        logger.info(f"Processing approval for request {pk}: {request_type} for user {registration.its_number}")
+        
+        # Update request status FIRST (before deleting assignment)
+        khidmat_request.status = 'approved'
+        khidmat_request.reviewed_at = timezone.now()
+        khidmat_request.reviewed_by_name = request.user.username if request.user.is_authenticated else 'Admin'
+        khidmat_request.save()
+        
+        if request_type == 'cancel':
+            # Store assignment details before deletion
+            duty_date = assignment.duty_date
+            namaaz_type = assignment.get_namaaz_type_display()
+            
+            # Cancel reminders for this assignment
+            cancel_reminders_for_assignment(assignment)
+            
+            # Delete the duty assignment
+            assignment.delete()
+            logger.info(f"Deleted duty assignment: {duty_date} - {namaaz_type} for {registration.full_name}")
+            
+            # Check if user has any remaining duties
+            remaining_duties = DutyAssignment.objects.filter(
+                assigned_user=registration
+            ).count()
+            
+            # Update registration status if no duties left
+            if remaining_duties == 0:
+                registration.status = 'PENDING'
+                registration.save(update_fields=['status'])
+                logger.info(f"Updated registration {registration.id} status to PENDING (no remaining duties)")
+            else:
+                logger.info(f"Registration {registration.id} still has {remaining_duties} remaining duties")
+        
+        logger.info(f"Khidmat request {pk} approved successfully")
+        
+        return Response({
+            'success': True,
+            'message': f'{request_type.capitalize()} request approved successfully.',
+            'request_id': khidmat_request.id,
+            'status': 'approved'
+        })
+    
+    @action(detail=True, methods=['post'])
+    @transaction.atomic
+    def reject(self, request, pk=None):
+        """
+        Reject a khidmat request.
+        Only updates request status, no changes to duty roster.
+        """
+        khidmat_request = self.get_object()
+        
+        if khidmat_request.status != 'pending':
+            return Response(
+                {'error': 'Request has already been processed.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Update request status
+        khidmat_request.status = 'rejected'
+        khidmat_request.reviewed_at = timezone.now()
+        khidmat_request.reviewed_by_name = request.user.username if request.user.is_authenticated else 'Admin'
+        
+        # Store admin note if provided
+        admin_note = request.data.get('admin_note')
+        if admin_note:
+            khidmat_request.reason = f"{khidmat_request.reason}\n\nAdmin Note: {admin_note}"
+        
+        khidmat_request.save()
+        
+        logger.info(f"Khidmat request {pk} rejected by admin")
+        
+        return Response({
+            'success': True,
+            'message': 'Request rejected.',
+            'request_id': khidmat_request.id,
+            'status': 'rejected'
+        })

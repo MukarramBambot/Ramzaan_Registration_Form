@@ -10,6 +10,7 @@ from .views import (
     UnlockLogViewSet,
     ReminderViewSet,
     ReminderLogViewSet,
+    KhidmatRequestViewSet,
     MeView,
     HealthCheckView
 )
@@ -21,6 +22,7 @@ router.register(r'duty-assignments', DutyAssignmentViewSet, basename='duty-assig
 router.register(r'unlock-logs', UnlockLogViewSet, basename='unlock-log')
 router.register(r'reminders', ReminderViewSet, basename='reminder')
 router.register(r'reminder-logs', ReminderLogViewSet, basename='reminder-log')
+router.register(r'khidmat-requests', KhidmatRequestViewSet, basename='khidmat-request')
 
 urlpatterns = [
     path('auth/me/', MeView.as_view(), name='me'),
@@ -58,4 +60,10 @@ Reminders (Read-only):
 Reminder Logs (Read-only):
 - GET    /api/reminder-logs/                  - List all reminder logs
 - GET    /api/reminder-logs/{id}/             - Get reminder log details
+
+Khidmat Requests:
+- POST   /api/khidmat-requests/               - Create new request (user)
+- GET    /api/khidmat-requests/?status=pending - List requests (admin)
+- POST   /api/khidmat-requests/{id}/approve/  - Approve request (admin)
+- POST   /api/khidmat-requests/{id}/reject/   - Reject request (admin)
 """

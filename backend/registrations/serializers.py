@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Registration, AuditionFile, DutyAssignment, UnlockLog, Reminder, ReminderLog
+from .models import Registration, AuditionFile, DutyAssignment, UnlockLog, Reminder, ReminderLog, KhidmatRequest
 
 
 class AuditionFileSerializer(serializers.ModelSerializer):
@@ -30,7 +30,13 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 class RegistrationCreateSerializer(serializers.ModelSerializer):
     """Separate serializer for creating registrations with file uploads"""
-    
+    # Use ListField to handle multiple 'preference' values from FormData
+    preference = serializers.ListField(
+        child=serializers.CharField(),
+        required=True,
+        min_length=1
+    )
+
     class Meta:
         model = Registration
         fields = [
@@ -44,6 +50,73 @@ class RegistrationCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'status': {'default': 'PENDING'}
         }
+
+    def to_internal_value(self, data):
+        """
+        Ensure 'preference' is always treated as a list even if multiple keys are sent.
+        Avoids QueryDict.copy() which crashes on files (BufferedRandom pickling error).
+        """
+        if hasattr(data, 'getlist'):
+            # Convert QueryDict to a plain dict to avoid recursive deepcopy of file handles
+            new_data = data.dict()
+            prefs = data.getlist('preference')
+            if prefs:
+                new_data['preference'] = prefs
+            data = new_data
+        
+        return super().to_internal_value(data)
+
+    def validate_preference(self, value):
+        """
+        Normalize and validate against Registration.DUTY_CHOICES.
+        Maps frontend strings to backend keys.
+        Supports:
+        - "Azaan" -> "AZAAN"
+        - ["Azaan", "Takhbira"] -> ["AZAAN", "TAKHBIRA"]
+        - "Sanah" -> ["SANAH"]
+        - "Tajweed Quran Tilawat" -> ["TILAWAT"]
+        - "Dua e Joshan" -> ["JOSHAN"]
+        - "Yaseen" -> ["YASEEN"]
+        """
+        if isinstance(value, str):
+            value = [value]
+
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Preference must be a list or string.")
+
+        normalized = []
+        # Mapping from frontend values (case-insensitive) to backend keys
+        mapping = {
+            'AZAAN': 'AZAAN',
+            'TAKHBIRA': 'TAKHBIRA',
+            'TAKBIRA': 'TAKHBIRA',
+            'SANAH': 'SANAH',
+            'TAJWEED QURAN TILAWAT': 'TILAWAT',
+            'TAJWEED QURAN MASJID TILAWAT': 'TILAWAT',
+            'DUA E JOSHAN': 'JOSHAN',
+            'DUA E JOSHEN': 'JOSHAN',
+            'YASEEN': 'YASEEN',
+            'BOTH': 'BOTH'
+        }
+        
+        valid_choices = dict(Registration.DUTY_CHOICES)
+        valid_keys = list(valid_choices.keys())
+        
+        for item in value:
+            if not isinstance(item, str):
+                continue
+            
+            item_clean = item.strip().upper()
+            mapped_key = mapping.get(item_clean, item_clean)
+            
+            if mapped_key not in valid_keys:
+                raise serializers.ValidationError(f"'{item}' is not a valid choice.")
+            normalized.append(mapped_key)
+            
+        if not normalized:
+            raise serializers.ValidationError("At least one valid preference is required.")
+
+        return list(set(normalized))
 
 
 class DutyAssignmentSerializer(serializers.ModelSerializer):
@@ -171,3 +244,102 @@ class ReminderLogSerializer(serializers.ModelSerializer):
             'success',
             'message'
         ]
+
+
+class KhidmatRequestSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Khidmat (duty) cancellation and reallocation requests.
+    Supports both user-initiated requests and admin review actions.
+    """
+    user_details = serializers.SerializerMethodField()
+    assignment_details = serializers.SerializerMethodField()
+    request_type_display = serializers.SerializerMethodField()
+    
+    # For creating requests, accept assignment_id instead of assignment object
+    assignment_id = serializers.IntegerField(write_only=True, required=False)
+    
+    class Meta:
+        model = KhidmatRequest
+        fields = [
+            'id', 'assignment', 'assignment_id', 'request_type', 'reason', 
+            'status', 'created_at', 'reviewed_at', 'reviewed_by_name',
+            'user_details', 'assignment_details', 'request_type_display',
+            'preferred_date', 'preferred_time'
+        ]
+        read_only_fields = ['created_at', 'reviewed_at', 'assignment']
+        extra_kwargs = {
+            'assignment': {'required': False}
+        }
+    
+    def get_user_details(self, obj):
+        """Return user information from the assignment"""
+        if not obj.assignment:
+            return None
+        user = obj.assignment.assigned_user
+        return {
+            'full_name': user.full_name,
+            'its_number': user.its_number,
+            'phone_number': user.phone_number
+        }
+    
+    def get_assignment_details(self, obj):
+        """Return duty assignment details"""
+        if not obj.assignment:
+            return None
+        return {
+            'date': obj.assignment.duty_date.strftime('%d/%m/%Y'),
+            'namaaz': obj.assignment.get_namaaz_type_display()
+        }
+    
+    def get_request_type_display(self, obj):
+        """Return human-readable request type"""
+        return 'Cancellation' if obj.request_type == 'cancel' else 'Reallocation'
+    
+    def validate(self, data):
+        """
+        Validate the request:
+        - assignment_id must exist
+        - User must have an active duty assignment
+        - Only one pending request allowed per assignment
+        - Request type must be valid
+        """
+        # Get assignment_id from data
+        assignment_id = data.get('assignment_id')
+        
+        if assignment_id:
+            # Verify assignment exists
+            try:
+                assignment = DutyAssignment.objects.get(id=assignment_id)
+            except DutyAssignment.DoesNotExist:
+                raise serializers.ValidationError({
+                    'assignment_id': 'Duty assignment not found.'
+                })
+            
+            # Check for existing pending request for this assignment
+            existing_request = KhidmatRequest.objects.filter(
+                assignment=assignment,
+                status='pending'
+            ).first()
+            
+            if existing_request:
+                raise serializers.ValidationError({
+                    'assignment_id': 'A pending request already exists for this duty assignment.'
+                })
+            
+            # Store assignment in validated data
+            data['assignment'] = assignment
+        
+        # Validate request_type
+        request_type = data.get('request_type')
+        if request_type not in ['cancel', 'reallocate']:
+            raise serializers.ValidationError({
+                'request_type': 'Request type must be either "cancel" or "reallocate".'
+            })
+        
+        return data
+    
+    def create(self, validated_data):
+        """Create a new khidmat request"""
+        # Remove assignment_id from validated_data (we already set assignment)
+        validated_data.pop('assignment_id', None)
+        return super().create(validated_data)

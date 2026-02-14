@@ -67,46 +67,68 @@ document.addEventListener('DOMContentLoaded', () => {
      * Action Functions (Direct API Calls)
      */
     async function requestCancel(dutyId) {
+        if (!dutyId) {
+            alert("Error: Invalid duty ID.");
+            return;
+        }
+
         if (!confirm("Are you sure you want to request cancellation for this Khidmat?")) return;
         
         try {
-            const res = await apiFetch(`/api/assignments/${dutyId}/cancel/`, {
+            const res = await apiFetch(`/api/khidmat-requests/`, {
                 method: "POST",
-                requireAuth: false
+                requireAuth: false,
+                body: JSON.stringify({
+                    assignment_id: dutyId,
+                    request_type: "cancel",
+                    reason: "User requested cancellation"
+                })
             });
 
+            const data = await res.json();
+
             if (res.ok) {
-                alert("Cancellation request submitted successfully.");
+                alert(data.message || "Cancellation request submitted successfully.");
                 checkStatus(); // Refresh result
             } else {
-                const data = await res.json();
-                alert(data.error || "Unable to submit request.");
+                alert(data.error || data.message || "Unable to submit request.");
             }
         } catch (err) {
-            console.error(err);
-            alert("Connection error.");
+            console.error("Cancellation error:", err);
+            alert("Server error: " + err.message);
         }
     }
 
     async function requestReallocation(dutyId) {
+        if (!dutyId) {
+            alert("Error: Invalid duty ID.");
+            return;
+        }
+
         if (!confirm("Are you sure you want to request reallocation for this Khidmat?")) return;
 
         try {
-            const res = await apiFetch(`/api/assignments/${dutyId}/reallocate/`, {
+            const res = await apiFetch(`/api/khidmat-requests/`, {
                 method: "POST",
-                requireAuth: false
+                requireAuth: false,
+                body: JSON.stringify({
+                    assignment_id: dutyId,
+                    request_type: "reallocate",
+                    reason: "User requested reallocation"
+                })
             });
 
+            const data = await res.json();
+
             if (res.ok) {
-                alert("Reallocation request submitted successfully.");
+                alert(data.message || "Reallocation request submitted successfully.");
                 checkStatus(); // Refresh result
             } else {
-                const data = await res.json();
-                alert(data.error || "Unable to submit request.");
+                alert(data.error || data.message || "Unable to submit request.");
             }
         } catch (err) {
-            console.error(err);
-            alert("Connection error.");
+            console.error("Reallocation error:", err);
+            alert("Server error: " + err.message);
         }
     }
 
@@ -133,29 +155,42 @@ document.addEventListener('DOMContentLoaded', () => {
         let dutyMarkup = '';
         if (hasDuties) {
             dutyMarkup = `
-                <div class="space-y-3">
+                <div class="space-y-4 mt-6 border-t border-[#F9F7F7] pt-6">
+                    <h4 class="text-xs font-bold text-[#6B7280] uppercase tracking-widest mb-4">Confirmed Assignments</h4>
                     ${data.duties.map(d => {
                         const isPending = d.request_status === 'pending';
                         const badgeLabel = d.request_type === 'cancel' ? 'Cancellation Requested' : 'Reallocation Requested';
                         
                         return `
-                        <div class="p-3 border rounded-lg bg-white flex flex-col gap-2">
+                        <div class="p-4 border border-[#DBE2EF] rounded-2xl bg-[#F9FAFB] space-y-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <div class="text-sm text-[#6B7280]">Date</div>
+                                    <div class="text-[10px] text-[#6B7280] uppercase font-bold tracking-tighter">Date</div>
                                     <div class="text-[#112D4E] font-bold">${formatDateDMY(d.date)}</div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-sm text-[#6B7280]">Duty</div>
-                                    <div class="text-[#112D4E] font-bold">${(d.namaaz || '') + (d.type ? ' ' + d.type : '')}</div>
+                                    <div class="text-[10px] text-[#6B7280] uppercase font-bold tracking-tighter">Duty</div>
+                                    <div class="text-[#112D4E] font-bold text-sm leading-tight">${(d.namaaz || '') + (d.type ? ' ' + d.type : '')}</div>
                                 </div>
                             </div>
+
                             ${isPending ? `
-                                <div class="mt-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
-                                    <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-                                    <span class="text-amber-800 text-[11px] font-bold uppercase tracking-wider">${badgeLabel}</span>
+                                <div class="px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
+                                    <span class="text-amber-800 text-[10px] font-bold uppercase tracking-wider">${badgeLabel}</span>
                                 </div>
-                            ` : ''}
+                            ` : `
+                                <div class="flex gap-2">
+                                    <button onclick="requestCancel(${d.id})"
+                                        class="flex-1 px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-xl text-[11px] font-bold transition-colors">
+                                        Cancel
+                                    </button>
+                                    <button onclick="requestReallocation(${d.id})"
+                                        class="flex-1 px-3 py-2 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-xl text-[11px] font-bold transition-colors">
+                                        Reallocate
+                                    </button>
+                                </div>
+                            `}
                         </div>
                         `;
                     }).join('')}
@@ -184,23 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-green-800 text-sm font-medium">Assignment Confirmed!</p>
                         </div>
                         ${dutyMarkup}
-                        
-                        ${!data.duties.some(d => d.request_status === 'pending') ? `
-                            <div id="action-buttons-container" class="flex flex-col gap-3 mt-6 pt-4 border-t border-[#F9F7F7]">
-                                <button onclick="requestCancel(${data.duties[0].id})"
-                                    class="w-full px-4 py-3 bg-red-100 text-red-700 hover:bg-red-200 rounded-xl text-sm font-bold transition-colors">
-                                    Cancel Khidmat
-                                </button>
-                                <button onclick="requestReallocation(${data.duties[0].id})"
-                                    class="w-full px-4 py-3 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-xl text-sm font-bold transition-colors">
-                                    Request Reallocation
-                                </button>
-                            </div>
-                        ` : `
-                            <div class="mt-6 pt-4 border-t border-[#F9F7F7]">
-                                <p class="text-[#6B7280] text-xs text-center italic">Your request is being reviewed by the admin.</p>
-                            </div>
-                        `}
                     ` : (isRejected ? `
                          <div class="bg-red-50 rounded-2xl p-4 border border-red-100">
                             <p class="text-red-800 text-sm font-medium">Your registration has been rejected.</p>

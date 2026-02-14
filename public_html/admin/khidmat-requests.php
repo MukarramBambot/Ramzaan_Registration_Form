@@ -108,7 +108,7 @@
         }
 
         try {
-            const response = await apiFetch('/api/admin/khidmat-requests/?status=pending', {
+            const response = await apiFetch('/api/khidmat-requests/?status=pending', {
                 requireAuth: true
             });
 
@@ -117,7 +117,9 @@
                 throw new Error(`Error ${response.status}: Failed to fetch data`);
             }
 
-            const requests = await response.json();
+
+            const data = await response.json();
+            const requests = data.results || [];  // Extract results from paginated response
             renderTable(requests);
 
         } catch (err) {
@@ -214,7 +216,7 @@
                     row.style.opacity = '0.5';
                     row.classList.add('pointer-events-none');
 
-                    const response = await apiFetch(`/api/admin/khidmat-requests/${requestId}/${action}/`, {
+                    const response = await apiFetch(`/api/khidmat-requests/${requestId}/${action}/`, {
                         method: 'POST',
                         requireAuth: true
                     });

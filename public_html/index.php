@@ -43,20 +43,20 @@
                         <li class="p-3 border border-[#E6EDF7] rounded flex items-start justify-between">
                             <div>
                                 <strong class="text-[#112D4E]">Azaan:</strong>
-                                <div class="text-sm text-[#6B7280]">Practice Video</div>
+                                <div class="text-sm text-[#6B7280]">Practice Audio</div>
                             </div>
                             <div>
-                                <a href="https://srv1827-files.hstgr.io/b769b84a5cac0666/files/public_html/assets/Pratice%20Files/Azaan.mp3" target="_blank" rel="noopener noreferrer" class="text-[#3F72AF] hover:underline">Watch Practice Video</a>
+                                <a href="https://srv1827-files.hstgr.io/b769b84a5cac0666/files/public_html/assets/Pratice%20Files/Azaan.mp3" target="_blank" rel="noopener noreferrer" class="text-[#3F72AF] hover:underline">Watch Practice Audio</a>
                             </div>
                         </li>
 
                         <li class="p-3 border border-[#E6EDF7] rounded flex items-start justify-between">
                             <div>
                                 <strong class="text-[#112D4E]">Takbira:</strong>
-                                <div class="text-sm text-[#6B7280]">Practice Video</div>
+                                <div class="text-sm text-[#6B7280]">Practice Audio</div>
                             </div>
                             <div>
-                                <a href="/var/www/Ramzaan_Registration_Form/public_html/assets/pratice files/Takbira.mp4" target="_blank" rel="noopener noreferrer" class="text-[#3F72AF] hover:underline">Watch Practice Video</a>
+                                <a href="/var/www/Ramzaan_Registration_Form/public_html/assets/pratice files/Takbira.mp4" target="_blank" rel="noopener noreferrer" class="text-[#3F72AF] hover:underline">Watch Practice Audio</a>
                             </div>
                         </li>
 
@@ -165,7 +165,7 @@
                             </label>
                             <label class="flex items-center p-4 border border-[#DBE2EF] rounded hover:bg-[#F9FAFB] cursor-pointer transition-colors">
                                 <input type="checkbox" name="preference" value="Takhbira" class="w-5 h-5 text-[#3F72AF] border-gray-300 focus:ring-[#3F72AF]">
-                                <span class="ml-3 text-[#112D4E]">Takhbira</span>
+                                <span class="ml-3 text-[#112D4E]">Takbira</span>
                             </label>
                             <label class="flex items-center p-4 border border-[#DBE2EF] rounded hover:bg-[#F9FAFB] cursor-pointer transition-colors">
                                 <input type="checkbox" name="preference" value="Sanah" class="w-5 h-5 text-[#3F72AF] border-gray-300 focus:ring-[#3F72AF]">
@@ -173,7 +173,7 @@
                             </label>
                             <label class="flex items-center p-4 border border-[#DBE2EF] rounded hover:bg-[#F9FAFB] cursor-pointer transition-colors">
                                 <input type="checkbox" name="preference" value="Tajweed Quran Tilawat" class="w-5 h-5 text-[#3F72AF] border-gray-300 focus:ring-[#3F72AF]">
-                                <span class="ml-3 text-[#112D4E]">Tajweed Quran Tilawat</span>
+                                <span class="ml-3 text-[#112D4E]">Tajweed Quran Masjid Tilawat</span>
                             </label>
                             <label class="flex items-center p-4 border border-[#DBE2EF] rounded hover:bg-[#F9FAFB] cursor-pointer transition-colors">
                                 <input type="checkbox" name="preference" value="Dua e Joshan" class="w-5 h-5 text-[#3F72AF] border-gray-300 focus:ring-[#3F72AF]">

@@ -1,9 +1,10 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.db import transaction
 import logging
+import os
 
-from .models import Registration, DutyAssignment
+from .models import Registration, DutyAssignment, AuditionFile
 from .utils import safe_task_delay
 from .tasks import (
     send_registration_confirmation_task, 
@@ -15,68 +16,33 @@ from .utils.email_notifications import send_registration_email, send_allotment_e
 logger = logging.getLogger('registrations')
 
 
-@receiver(post_save, sender=Registration)
-def registration_post_save(sender, instance, created, **kwargs):
-    """
-    Trigger WhatsApp + Email notification for new registrations.
-    
-    Only fires on creation (created=True), not on updates.
-    Uses transaction.on_commit to ensure DB is ready before task runs.
-    Delegates to Celery task which runs async and never blocks API response.
-    """
-    if not created:
-        return  # Only handle new registrations
-    
-    logger.info(f"[Signal] registration_post_save: New registration {instance.id} ({instance.full_name}). Will schedule tasks after commit.")
-    
-    def schedule_tasks():
-        """Enqueue tasks after transaction commits.
-        """
-        # 1. Notifications are handled in the background task
-
-        # 2. WhatsApp + Email Notification (Async via Celery)
-        try:
-            logger.info(f"[OnCommit] Enqueueing notifications for registration {instance.id}")
-            safe_task_delay(send_registration_confirmation_task, instance.id, non_blocking=True)
-        except Exception as e:
-            logger.error(f"[OnCommit] Failed to schedule notification task for registration {instance.id}: {str(e)}")
-
-        # 3. Google Sheets Sync (Async via Celery)
-        try:
-            logger.info(f"[OnCommit] Enqueueing sync_to_sheets_task for registration {instance.id}")
-            safe_task_delay(sync_to_sheets_task, instance.id, non_blocking=True)
-        except Exception as e:
-            logger.error(f"[OnCommit] Failed to schedule sheet sync task for registration {instance.id}: {str(e)}")
-    
-    try:
-        # Schedule the function to run AFTER this transaction commits.
-        # This ensures the registration record is saved to DB before the task tries to fetch it.
-        transaction.on_commit(schedule_tasks)
-        logger.info(f"[Signal] on_commit callback registered for registration {instance.id}")
-    except Exception as e:
-        logger.error(f"[Signal] Failed to register on_commit callback for registration {instance.id}: {str(e)}")
+# NOTE: Registration tasks (confirmation, sheet sync) are now triggered directly 
+# in the RegistrationViewSet.create method using transaction.on_commit 
+# for better reliability and to ensure only IDs are passed.
+# See: registrations/views.py
 
 
 @receiver(post_save, sender=DutyAssignment)
 def duty_assignment_post_save(sender, instance, created, **kwargs):
     """
     Trigger WhatsApp notification for new duty assignments.
-    
-    Only fires on creation (created=True), not on updates.
-    Prevents duplicate messages on subsequent signal misfires.
-    Uses transaction.on_commit and Celery for async execution.
     """
     if not created:
-        return  # Only handle new duty assignments
+        return
     
     logger.info(f"[Signal] duty_assignment_post_save: New duty {instance.id} assigned to {instance.assigned_user.full_name}. Will schedule task after commit.")
     
+    # Update registration status to ALLOTTED
+    try:
+        registration = instance.assigned_user
+        if registration.status != 'ALLOTTED':
+            registration.status = 'ALLOTTED'
+            registration.save(update_fields=['status'])
+            logger.info(f"[Signal] Updated registration {registration.id} status to ALLOTTED")
+    except Exception as e:
+        logger.error(f"[Signal] Failed to update registration status for duty {instance.id}: {str(e)}")
+    
     def schedule_tasks():
-        """Enqueue tasks after DB commit.
-        """
-        # 1. Notifications are handled in the background task
-
-        # 2. WhatsApp Notification (Async via Celery)
         try:
             logger.info(f"[OnCommit] Enqueueing send_duty_allotment_notification_task for duty {instance.id}")
             result = safe_task_delay(send_duty_allotment_notification_task, instance.id, non_blocking=True)
@@ -85,8 +51,21 @@ def duty_assignment_post_save(sender, instance, created, **kwargs):
             logger.error(f"[OnCommit] Failed to schedule task for duty {instance.id}: {str(e)}")
     
     try:
-        # Schedule the function to run AFTER this transaction commits.
         transaction.on_commit(schedule_tasks)
         logger.info(f"[Signal] on_commit callback registered for duty {instance.id}")
     except Exception as e:
         logger.error(f"[Signal] Failed to register on_commit callback for duty {instance.id}: {str(e)}")
+
+
+@receiver(post_delete, sender=AuditionFile)
+def audition_file_post_delete(sender, instance, **kwargs):
+    """
+    Delete physical file from disk when AuditionFile record is deleted.
+    """
+    if instance.audition_file_path:
+        try:
+            if os.path.isfile(instance.audition_file_path.path):
+                os.remove(instance.audition_file_path.path)
+                logger.info(f"[Signal] Deleted file from disk: {instance.audition_file_path.path}")
+        except Exception as e:
+            logger.error(f"[Signal] Failed to delete file or access path: {str(e)}")

@@ -11,12 +11,31 @@ from .models import (
 
 @admin.register(Registration)
 class RegistrationAdmin(admin.ModelAdmin):
-    list_display = ['full_name', 'its_number', 'email', 'phone_number', 'preference', 'created_at']
-    list_filter = ['preference', 'created_at']
+    list_display = ['full_name', 'its_number', 'email', 'phone_number', 'preference', 'is_active', 'created_at']
+    list_filter = ['is_active', 'preference', 'created_at']
     search_fields = ['full_name', 'its_number', 'email']
     readonly_fields = ['created_at']
     ordering = ['-created_at']
     list_per_page = 100
+    actions = ['hard_delete']
+
+    def get_queryset(self, request):
+        """Show all by default, but allow filtering by active status."""
+        return super().get_queryset(request)
+
+    def delete_model(self, request, obj):
+        """Soft delete: mark as inactive instead of removing from DB."""
+        obj.is_active = False
+        obj.save()
+
+    def delete_queryset(self, request, queryset):
+        """Batch soft delete."""
+        queryset.update(is_active=False)
+
+    @admin.action(description="Hard Delete (Permanently remove from database)")
+    def hard_delete(self, request, queryset):
+        """Perform actual database deletion."""
+        queryset.delete()
 
 
 @admin.register(AuditionFile)
