@@ -405,12 +405,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
         detailsContainer.innerHTML = panelHTML;
-        document.body.style.overflow = 'hidden';
+        if (typeof ScrollLockManager !== 'undefined') {
+            ScrollLockManager.lock();
+        } else {
+            document.body.style.overflow = 'hidden';
+        }
     }
 
     window.closeDetailsPanel = function () {
         detailsContainer.innerHTML = '';
-        document.body.style.overflow = 'unset';
+        if (typeof ScrollLockManager !== 'undefined') {
+            ScrollLockManager.unlock();
+        } else {
+            document.body.style.overflow = 'unset';
+        }
     };
 
     window.startUnlock = function (date, duty) {

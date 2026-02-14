@@ -86,13 +86,21 @@ function openAuditionModal(file) {
     `;
 
     container.innerHTML = contentHTML;
-    document.body.style.overflow = 'hidden';
+    if (typeof ScrollLockManager !== 'undefined') {
+        ScrollLockManager.lock();
+    } else {
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 function closeAuditionModal() {
     const container = document.getElementById('audition-modal-container');
     if (container) {
         container.innerHTML = '';
-        document.body.style.overflow = 'unset';
+        if (typeof ScrollLockManager !== 'undefined') {
+            ScrollLockManager.unlock();
+        } else {
+            document.body.style.overflow = 'unset';
+        }
     }
 }

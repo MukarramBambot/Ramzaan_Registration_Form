@@ -1,162 +1,328 @@
 """
-WhatsApp integration via official Meta Cloud API.
+WhatsApp Integration Module (Production Grade)
 
-Handles:
-- Registration confirmation
-- Duty allotment notification
-- 24-hour event reminders
+This module handles sending WhatsApp template messages via the Meta Cloud API.
+It allows for:
+- sending registration confirmations
+- sending duty allotment notifications
+- sending duty reminders
+
+Architecture:
+- Internal helper `_send_template_message` handles the raw API call with robust logging and error handling.
+- Public wrapper functions (`send_duty_allotment`, etc.) strictly define the parameters and templates.
+
+Configuration:
+- Requires `WHATSAPP_PHONE_NUMBER_ID` and `WHATSAPP_ACCESS_TOKEN` in Django settings.
+- defaults to API version `v24.0` (configurable).
+
+Usage:
+    from registrations.utils.whatsapp import send_registration_received
+    result = send_registration_received("919876543210", "Ali Bhai")
+    if result["success"]:
+        print("Message sent!")
+
 """
 
-import json
-import logging
 import requests
+import logging
+import json
+from typing import Dict, Any, Optional, List
 from django.conf import settings
+from requests.exceptions import Timeout, ConnectionError, RequestException
 
+# Configure Logger to use the 'registrations' logger defined in settings
 logger = logging.getLogger("registrations")
 
-# -------------------------------------------------------------------
-# Meta Configuration
-# -------------------------------------------------------------------
+class WhatsAppAPIException(Exception):
+    """Custom exception for WhatsApp API failures."""
+    pass
 
-META_WA_PHONE_NUMBER_ID = getattr(settings, "META_WA_PHONE_NUMBER_ID", "")
-META_WA_ACCESS_TOKEN = getattr(settings, "META_WA_ACCESS_TOKEN", "")
-META_WA_API_VERSION = getattr(settings, "META_WA_API_VERSION", "v18.0")
+# Template Constants
+TEMPLATE_DUTY_ALLOTMENT = "duty_allotment_confirmed"
+TEMPLATE_DUTY_REMINDER = "duty_reminder_tomorrow"
+TEMPLATE_REGISTRATION_RECEIVED = "registration_received"
 
-# Template Names (Meta uses names, not SIDs)
-TEMPLATE_FORM_SUBMITTED = "form_submitted_notification"
-TEMPLATE_ALLOTMENT = "allotment_confirmed"
-TEMPLATE_REMINDER = "event_reminder_24hrs"
+LANGUAGE_CODE = "en"  # Default Language
 
-def normalize_phone_number(number):
+def _mask_phone_number(phone: str) -> str:
     """
-    Normalize phone number to digits only (Meta API requirement).
-    - Strips +, space, dashes
-    - Ensures country code is present (assumes 91 if 10 digits)
+    Masks phone number for logging privacy.
+    Example: 919876543210 -> *******3210
     """
-    if not number:
-        return None
+    if not phone:
+        return "None"
+    if len(phone) < 4:
+        return "****"
+    return "*" * (len(phone) - 4) + phone[-4:]
 
-    digits = "".join(filter(str.isdigit, str(number)))
 
-    if len(digits) == 10:
-        return f"91{digits}"
-    return digits
 
-def send_meta_whatsapp_template(to_number, template_name, components):
+from .phone import normalize_phone_number
+
+def _send_template_message(phone: str, template_name: str, parameters: List[str]) -> Dict[str, Any]:
     """
-    Core WhatsApp sender using Meta Cloud API.
+    Internal helper to send a WhatsApp template message.
+    ...
+    """
+    # 1. Configuration & Setup
+    api_version = getattr(settings, "WHATSAPP_API_VERSION", "v24.0")
+    phone_id = getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", None)
+    access_token = getattr(settings, "WHATSAPP_ACCESS_TOKEN", None)
     
-    Args:
-        to_number (str): recipient phone number
-        template_name (str): The name of the approved Meta template
-        components (list): List of component dicts (body parameters)
-    """
-    if not META_WA_ACCESS_TOKEN or not META_WA_PHONE_NUMBER_ID:
-        logger.error("[WhatsApp] Meta API credentials missing in settings")
-        return False
+    if not phone_id or not access_token:
+        logger.critical("[WhatsApp] CRITICAL: Missing WHATSAPP_PHONE_NUMBER_ID or WHATSAPP_ACCESS_TOKEN in settings.")
+        return {
+            "success": False,
+            "status_code": None,
+            "message_id": None,
+            "response": {"error": "Missing Server Configuration"}
+        }
 
-    phone_number = normalize_phone_number(to_number)
-    if not phone_number:
-        logger.error(f"[WhatsApp] Invalid phone number: {to_number}")
-        return False
+    try:
+        normalized_to = normalize_phone_number(phone)
+    except ValueError as e:
+        logger.error(f"[WhatsApp] Invalid phone number: {_mask_phone_number(str(phone))} - {str(e)}")
+        return {
+            "success": False,
+            "status_code": None,
+            "message_id": None,
+            "response": {"error": f"Invalid Phone Number: {str(e)}"}
+        }
 
-    url = f"https://graph.facebook.com/{META_WA_API_VERSION}/{META_WA_PHONE_NUMBER_ID}/messages"
+    url = f"https://graph.facebook.com/{api_version}/{phone_id}/messages"
     
     headers = {
-        "Authorization": f"Bearer {META_WA_ACCESS_TOKEN}",
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
 
+    # 2. Build Payload
+    component_parameters = [{"type": "text", "text": str(p)} for p in parameters]
+
     payload = {
         "messaging_product": "whatsapp",
-        "to": phone_number,
+        "to": normalized_to,
         "type": "template",
         "template": {
             "name": template_name,
-            "language": {
-                "code": "en"
-            },
-            "components": components
+            "language": {"code": LANGUAGE_CODE},
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": component_parameters
+                }
+            ]
         }
     }
 
-    try:
-        logger.info(f"[WhatsApp] Sending Meta template '{template_name}' to {phone_number}")
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
-        response_data = response.json()
+    # 3. Log Request (Masked)
+    masked_phone = _mask_phone_number(normalized_to)
+    logger.info(f"[WhatsApp] Sending '{template_name}' to {masked_phone} with params: {parameters}")
+    logger.debug(f"[WhatsApp] Request URL: {url}")
+    # Do NOT log the full payload if it contains sensitive info, but here params are usually safe-ish.
+    # We will log it for debug purposes but be careful in high security environments.
+    logger.debug(f"[WhatsApp] Payload: {json.dumps(payload)}")
 
-        if response.status_code == 200:
-            logger.info(f"[WhatsApp] ✓ SENT (Meta ID: {response_data.get('messages', [{}])[0].get('id')})")
-            return True
+    # 4. Execute Request
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        
+        try:
+            response_data = response.json()
+        except ValueError:
+            response_data = {"raw_text": response.text}
+
+        status_code = response.status_code
+        
+        # 5. Handle Response
+        if status_code in [200, 201]:
+            # Success
+            msg_id = response_data.get("messages", [{}])[0].get("id")
+            logger.info(f"[WhatsApp] ✓ Success: {status_code} | MsgID: {msg_id} | To: {masked_phone}")
+            return {
+                "success": True,
+                "status_code": status_code,
+                "message_id": msg_id,
+                "response": response_data
+            }
         else:
-            logger.error(f"[WhatsApp] Meta API Error: {response.status_code} - {response.text}")
-            return False
+            # API Error
+            error_info = response_data.get("error", {})
+            error_msg = error_info.get("message", "Unknown Error")
+            error_code = error_info.get("code")
+            
+            logger.error(f"[WhatsApp] ❌ API Error: {status_code} | Code: {error_code} | Msg: {error_msg}")
+            logger.error(f"[WhatsApp] Full Response: {json.dumps(response_data)}")
+            
+            # Check for specific handling (optional)
+            if error_code == 132001: 
+                logger.warning("[WhatsApp] Template does not exist in this language/name combination.")
+
+            raise WhatsAppAPIException(f"Meta API Error {status_code}: {error_msg}")
+
+    except Timeout:
+        logger.error(f"[WhatsApp] ⚠️ Timeout (10s) sending to {masked_phone}")
+        return {
+            "success": False,
+            "status_code": 408, # Request Timeout
+            "message_id": None,
+            "response": {"error": "Connection Timeout"}
+        }
+        
+    except ConnectionError:
+        logger.error(f"[WhatsApp] ⚠️ Connection Error sending to {masked_phone}")
+        return {
+            "success": False,
+            "status_code": 503, # Service Unavailable
+            "message_id": None,
+            "response": {"error": "Connection Failed"}
+        }
+
+    except RequestException as e:
+        logger.exception(f"[WhatsApp] ⚠️ Unexpected Request Exception: {str(e)}")
+        return {
+            "success": False,
+            "status_code": 500,
+            "message_id": None,
+            "response": {"error": str(e)}
+        }
+        
+    except WhatsAppAPIException as e:
+        # Re-raised from within logic for caller to handle if they want, 
+        # or we just return the failure dict.
+        # Here we return the failure dict structure as per requirements.
+        return {
+            "success": False,
+            "status_code": status_code,
+            "message_id": None,
+            "response": response_data
+        }
 
     except Exception as e:
-        logger.exception(f"[WhatsApp] Unexpected error during Meta API call: {str(e)}")
-        return False
-
-# -------------------------------------------------------------------
-# Public Notification APIs
-# -------------------------------------------------------------------
-
-def send_registration_notification(registration):
-    """
-    Template: form_submitted_notification
-    V1: Full Name
-    """
-    components = [
-        {
-            "type": "body",
-            "parameters": [
-                {"type": "text", "text": registration.full_name}
-            ]
+        logger.exception(f"[WhatsApp] ⚠️ Critical Internal Error: {str(e)}")
+        return {
+            "success": False,
+            "status_code": 500,
+            "message_id": None,
+            "response": {"error": f"Internal Error: {str(e)}"}
         }
-    ]
-    return send_meta_whatsapp_template(registration.phone_number, TEMPLATE_FORM_SUBMITTED, components)
 
-def send_duty_allotment_notification(duty_assignment):
+
+# =============================================================================
+# PUBLIC WRAPPER FUNCTIONS
+# =============================================================================
+
+def send_duty_allotment(phone: str, full_name: str, duty_date: str, duty_time: str) -> Dict[str, Any]:
     """
-    Template: allotment_confirmed
-    V1: Full Name
-    V2: Date
-    V3: Time
-    """
-    user = duty_assignment.assigned_user
-    date_str = duty_assignment.duty_date.strftime("%d %B %Y")
+    Sends 'duty_allotment_confirmed' template.
     
-    if hasattr(duty_assignment, "slot") and duty_assignment.slot:
-        time_str = duty_assignment.slot.time_label
-    else:
-        time_str = duty_assignment.get_namaaz_type_display()
-
-    components = [
-        {
-            "type": "body",
-            "parameters": [
-                {"type": "text", "text": user.full_name},
-                {"type": "text", "text": date_str},
-                {"type": "text", "text": time_str}
-            ]
-        }
-    ]
-    return send_meta_whatsapp_template(user.phone_number, TEMPLATE_ALLOTMENT, components)
-
-def send_event_reminder_24hrs(registration, date, time_label):
+    Template Params:
+    {{1}} = Full Name
+    {{2}} = Date
+    {{3}} = Time
     """
-    Template: event_reminder_24hrs
-    V1: Full Name
-    V2: Date
-    V3: Time
+    # Defensive check for None
+    full_name = full_name or "Brother/Sister"
+    duty_date = str(duty_date)
+    duty_time = str(duty_time)
+    
+    params = [full_name, duty_date, duty_time]
+    
+    return _send_template_message(
+        phone=phone,
+        template_name=TEMPLATE_DUTY_ALLOTMENT,
+        parameters=params
+    )
+
+def send_duty_reminder_tomorrow(phone: str, full_name: str, duty_date: str, duty_time: str) -> Dict[str, Any]:
     """
-    components = [
-        {
-            "type": "body",
-            "parameters": [
-                {"type": "text", "text": registration.full_name},
-                {"type": "text", "text": str(date)},
-                {"type": "text", "text": str(time_label)}
-            ]
-        }
-    ]
-    return send_meta_whatsapp_template(registration.phone_number, TEMPLATE_REMINDER, components)
+    Sends 'duty_reminder_tomorrow' template.
+    
+    Template Params:
+    {{1}} = Full Name
+    {{2}} = Date
+    {{3}} = Time
+    """
+    full_name = full_name or "Brother/Sister"
+    duty_date = str(duty_date)
+    duty_time = str(duty_time)
+    
+    params = [full_name, duty_date, duty_time]
+    
+    return _send_template_message(
+        phone=phone,
+        template_name=TEMPLATE_DUTY_REMINDER,
+        parameters=params
+    )
+
+def send_registration_received(phone: str, full_name: str) -> Dict[str, Any]:
+    """
+    Sends 'registration_received' template.
+    
+    Template Params:
+    {{1}} = Full Name
+    """
+    full_name = full_name or "Brother/Sister"
+    
+    params = [full_name]
+    
+    return _send_template_message(
+        phone=phone,
+        template_name=TEMPLATE_REGISTRATION_RECEIVED,
+        parameters=params
+    )
+
+
+def _send_text_message(phone: str, text: str) -> Dict[str, Any]:
+    """
+    Send a plain text WhatsApp message (non-template). Used for admin alerts.
+    """
+    api_version = getattr(settings, "WHATSAPP_API_VERSION", "v24.0")
+    phone_id = getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", None)
+    access_token = getattr(settings, "WHATSAPP_ACCESS_TOKEN", None)
+
+    if not phone_id or not access_token:
+        logger.critical("[WhatsApp] CRITICAL: Missing WHATSAPP_PHONE_NUMBER_ID or WHATSAPP_ACCESS_TOKEN in settings.")
+        return {"success": False, "status_code": None, "response": {"error": "Missing Server Configuration"}}
+
+    try:
+        normalized_to = normalize_phone_number(phone)
+    except ValueError as e:
+        logger.error(f"[WhatsApp] Invalid phone number: {_mask_phone_number(str(phone))} - {str(e)}")
+        return {"success": False, "status_code": None, "response": {"error": f"Invalid Phone Number: {str(e)}"}}
+
+    url = f"https://graph.facebook.com/{api_version}/{phone_id}/messages"
+    headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": normalized_to,
+        "type": "text",
+        "text": {"body": str(text)}
+    }
+
+    masked_phone = _mask_phone_number(normalized_to)
+    logger.info(f"[WhatsApp] Sending text message to {masked_phone}")
+
+    try:
+        resp = requests.post(url, headers=headers, json=payload, timeout=10)
+        try:
+            data = resp.json()
+        except ValueError:
+            data = {"raw_text": resp.text}
+
+        if resp.status_code in [200, 201]:
+            msg_id = data.get("messages", [{}])[0].get("id")
+            logger.info(f"[WhatsApp] ✓ Text Success: {resp.status_code} | MsgID: {msg_id} | To: {masked_phone}")
+            return {"success": True, "status_code": resp.status_code, "message_id": msg_id, "response": data}
+        else:
+            logger.error(f"[WhatsApp] ❌ Text API Error: {resp.status_code} | Response: {data}")
+            return {"success": False, "status_code": resp.status_code, "response": data}
+
+    except Exception as e:
+        logger.exception(f"[WhatsApp] Text send failed: {str(e)}")
+        return {"success": False, "status_code": 500, "response": {"error": str(e)}}
+
+
+def send_admin_text_message(phone: str, text: str) -> Dict[str, Any]:
+    """Convenience wrapper to send a plain text WhatsApp to admin or staff."""
+    return _send_text_message(phone, text)

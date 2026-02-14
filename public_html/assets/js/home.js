@@ -48,12 +48,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const formData = new FormData(form);
 
-        // Append files
+        // Append files under `media_files` (server expects this key). Keep backward compatibility by
+        // also allowing `audition_files` on server-side.
         selectedFiles.forEach(file => {
-            formData.append('audition_files', file);
+            formData.append('media_files', file);
         });
 
-        // Preference is radio, auto handled by FormData
+        // Preference is now checkboxes (multi-select). Collect checked values
+        const prefElems = Array.from(document.querySelectorAll('input[name="preference"]:checked'));
+        if (prefElems.length === 0) {
+            showDialog({
+                variant: 'danger',
+                title: 'Validation Error',
+                message: 'Please select at least one option for "Register For".',
+                confirmLabel: 'OK'
+            });
+            setSubmitting(false);
+            return;
+        }
+
+        // Append each selected preference to the FormData (backend expects multiple values under same key)
+        prefElems.forEach(elem => formData.append('preference', elem.value));
 
         let isRedirecting = false;
 

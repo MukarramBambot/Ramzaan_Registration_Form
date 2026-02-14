@@ -35,6 +35,7 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = [
     "madrasjamaatportal.org",
     "www.madrasjamaatportal.org",
+    "api.madrasjamaatportal.org",
     "31.97.63.149",
     "localhost",
     "127.0.0.1",
@@ -291,11 +292,19 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 # ==========================================
 
 # 📲 WhatsApp (Meta WhatsApp Cloud API)
-WHATSAPP_PROVIDER="meta"
-META_WA_PHONE_NUMBER_ID=os.getenv("META_WA_PHONE_NUMBER_ID")
-META_WA_ACCESS_TOKEN=os.getenv("META_WA_ACCESS_TOKEN")
-META_WA_BUSINESS_ACCOUNT_ID=os.getenv("META_WA_BUSINESS_ACCOUNT_ID")
-META_WA_API_VERSION=os.getenv("META_WA_API_VERSION", "v18.0")
+WHATSAPP_PROVIDER = "meta"
+
+# Prefer WHATSAPP_ prefix but fall back to META_WA_ for compatibility
+WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID") or os.getenv("META_WA_PHONE_NUMBER_ID")
+WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN") or os.getenv("META_WA_ACCESS_TOKEN")
+WHATSAPP_BUSINESS_ACCOUNT_ID = os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID") or os.getenv("META_WA_BUSINESS_ACCOUNT_ID")
+WHATSAPP_API_VERSION = os.getenv("WHATSAPP_API_VERSION") or os.getenv("META_WA_API_VERSION", "v24.0")
+
+# Maintain legacy variables for other parts of the system if needed, pointed to the same source
+META_WA_PHONE_NUMBER_ID = WHATSAPP_PHONE_NUMBER_ID
+META_WA_ACCESS_TOKEN = WHATSAPP_ACCESS_TOKEN
+META_WA_BUSINESS_ACCOUNT_ID = WHATSAPP_BUSINESS_ACCOUNT_ID
+META_WA_API_VERSION = WHATSAPP_API_VERSION
 
 # ==========================================
 # REMINDER CONFIGURATION
@@ -331,6 +340,10 @@ LOGGING = {
             'format': '{levelname} {asctime} {module} {message}',
             'style': '{',
         },
+        'json': {
+            'format': '{{"timestamp": "{asctime}", "level": "{levelname}", "module": "{module}", "message": "{message}"}}',
+            'style': '{',
+        },
     },
     'handlers': {
         'console': {
@@ -342,10 +355,20 @@ LOGGING = {
             'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
             'formatter': 'verbose',
         },
+        'json_file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'whatsapp.json.log'),
+            'formatter': 'json',
+        },
     },
     'loggers': {
         'registrations': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'file', 'json_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'whatsapp': {
+            'handlers': ['json_file', 'console'],
             'level': 'INFO',
             'propagate': False,
         },

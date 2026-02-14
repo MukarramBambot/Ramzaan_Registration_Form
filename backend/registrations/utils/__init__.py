@@ -13,7 +13,11 @@ import requests
 import logging
 
 from ..models import Reminder, ReminderLog, DutyAssignment
-from .whatsapp import send_registration_notification, send_duty_allotment_notification
+from .whatsapp import (
+    send_registration_received, 
+    send_duty_allotment,
+    send_duty_reminder_tomorrow
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +50,33 @@ def send_confirmation_email(registration):
 def send_whatsapp_message_for_registration(registration):
     """
     Wrapper for registration WhatsApp notification.
+    Returns full result dict from whatsapp.py
     """
-    return send_registration_notification(registration)
+    return send_registration_received(
+        phone=registration.phone_number,
+        full_name=registration.full_name
+    )
 
 def send_whatsapp_message_for_allotment(duty_assignment):
     """
     Wrapper for duty allotment WhatsApp notification.
     """
-    return send_duty_allotment_notification(duty_assignment)
+    # Extract details
+    user = duty_assignment.assigned_user
+    date_str = duty_assignment.duty_date.strftime("%d %B %Y")
+    
+    # Extract time label
+    if hasattr(duty_assignment, "slot") and duty_assignment.slot:
+        time_str = duty_assignment.slot.time_label
+    else:
+        time_str = duty_assignment.get_namaaz_type_display()
+
+    return send_duty_allotment(
+        phone=user.phone_number,
+        full_name=user.full_name,
+        duty_date=date_str,
+        duty_time=time_str
+    )
 
 # Timezone configuration
 IST = pytz.timezone('Asia/Kolkata')
@@ -118,6 +141,9 @@ def create_reminder_for_assignment(duty_assignment):
     except Exception as e:
         logger.error(f"Failed to create reminder for {duty_assignment}: {str(e)}")
         return None
+
+
+
 
 
 def cancel_reminders_for_assignment(duty_assignment):
@@ -221,7 +247,7 @@ def send_whatsapp_reminder(reminder):
         user = duty.assigned_user
         
         # Use consolidated utility
-        from .whatsapp import send_event_reminder_24hrs
+        from .whatsapp import send_duty_reminder_tomorrow
         
         # Format Date and Time
         date_str = duty.duty_date.strftime('%d %B %Y')
@@ -233,28 +259,45 @@ def send_whatsapp_reminder(reminder):
         else:
             time_label = duty.get_namaaz_type_display()
 
-        success = send_event_reminder_24hrs(
-            registration=user,
-            date=date_str,
-            time_label=time_label
+        # The new function expects (phone, name, date, time)
+        result = send_duty_reminder_tomorrow(
+            phone=user.phone_number,
+            full_name=user.full_name,
+            duty_date=date_str,
+            duty_time=time_label
         )
         
+        success = result.get('success', False)
+        
+        # Save metadata regardless of success
+        reminder.whatsapp_message_id = result.get('message_id')
+        reminder.whatsapp_status = 'SENT' if success else 'FAILED'
         if success:
-            # Update reminder
-            reminder.whatsapp_sent = True
-            reminder.whatsapp_attempts += 1
-            reminder.save()
-            
+             reminder.whatsapp_sent = True
+             reminder.whatsapp_attempts += 1
+             reminder.sent_at = timezone.now()
+             # Clear previous errors on success
+             reminder.last_error = ""
+        else:
+             # Extract error
+             error_data = result.get('response', {}).get('error', {})
+             error_msg = str(error_data) if isinstance(error_data, dict) else str(result.get('response'))
+             reminder.whatsapp_attempts += 1
+             reminder.last_error = error_msg
+        
+        reminder.save()
+        
+        if success:
             # Log success
             ReminderLog.objects.create(
                 reminder=reminder,
                 channel='WHATSAPP',
                 success=True,
-                message=f"WhatsApp sent via template to {user.phone_number}"
+                message=f"WhatsApp sent via template to {user.phone_number} (ID: {reminder.whatsapp_message_id})"
             )
             return True
         else:
-            raise Exception("Template delivery utility returned False")
+            raise Exception(f"Template delivery failed: {reminder.last_error}")
             
     except Exception as e:
         error_msg = f"WhatsApp reminder failed: {str(e)}"
@@ -376,30 +419,18 @@ def safe_task_delay(task_func, *args, **kwargs):
     non_blocking = kwargs.pop('non_blocking', False)
     celery_enabled = getattr(settings, 'CELERY_ENABLED', True)
     
-    if not celery_enabled:
-        if non_blocking:
-            logger.info(f"Celery disabled: skipped non-blocking task {task_func.__name__}")
-            return None
-        
-        logger.info(f"Celery disabled: executing task {task_func.__name__} synchronously as configured.")
-        try:
-            return task_func(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"Synchronous fallback for {task_func.__name__} failed: {str(e)}")
-            return None
-
     def _enqueue_task():
         try:
             # Try calling .delay() if it exists (for shared_task decorated functions)
-            if hasattr(task_func, 'delay'):
+            if celery_enabled and hasattr(task_func, 'delay'):
                 try:
                     task_func.delay(*args, **kwargs)
                     logger.info(f"Task {task_func.__name__} enqueued to Celery successfully.")
                     return
                 except Exception as celery_err:
-                    logger.warning(f"Celery delay failed, falling back to in-process execution: {str(celery_err)}")
+                    logger.warning(f"Celery delay failed for {task_func.__name__}, falling back to thread: {str(celery_err)}")
             
-            # If delay() failed or doesn't exist, we run the function directly
+            # If delay() failed, doesn't exist, or Celery is disabled, we run the function directly
             # Note: For @shared_task(bind=True), the first argument is 'self'.
             # We pass the task instance itself if available.
             if hasattr(task_func, 'run'):
@@ -415,23 +446,24 @@ def safe_task_delay(task_func, *args, **kwargs):
     if non_blocking:
         # FIRE AND FORGET: Use a thread so the main request returns INSTANTLY
         # even if Redis connectivity is slow or timing out.
-        # If Redis is DOWN, the thread will handle the synchronous execution.
+        # This is now the primary path for any non_blocking=True request.
         thread = threading.Thread(target=_enqueue_task)
         thread.daemon = True
         thread.start()
-        return "THREADED_FALLBACK"
+        return "THREADED_EXECUTION"
 
-    try:
-        if hasattr(task_func, 'delay'):
-            return task_func.delay(*args, **kwargs)
-        else:
-            return task_func(*args, **kwargs)
-    except Exception as e:
-        logger.warning(f"Celery connection failed: {str(e)}")
+    # Synchronous path (non_blocking=False)
+    if celery_enabled and hasattr(task_func, 'delay'):
         try:
-            # Fallback to synchronous if Redis is down AND NOT non_blocking
-            logger.info(f"Falling back to synchronous execution for {task_func.__name__}")
-            return task_func(*args, **kwargs)
-        except Exception as sync_e:
-            logger.error(f"Fallback synchronous execution also failed: {str(sync_e)}")
-            return None
+            return task_func.delay(*args, **kwargs)
+        except Exception as e:
+            logger.warning(f"Celery connection failed for {task_func.__name__}: {str(e)}")
+            # Fallback to synchronous if Redis is down
+    
+    # Final synchronous fallback
+    logger.info(f"Executing task {task_func.__name__} synchronously.")
+    try:
+        return task_func(*args, **kwargs)
+    except Exception as sync_e:
+        logger.error(f"Synchronous execution of {task_func.__name__} failed: {str(sync_e)}")
+        return None

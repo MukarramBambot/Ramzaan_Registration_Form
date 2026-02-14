@@ -26,6 +26,25 @@ const ICONS = {
 
 };
 
+// --- Scroll Lock Manager ---
+const ScrollLockManager = {
+    locks: 0,
+    lock() {
+        this.locks++;
+        if (this.locks === 1) {
+            document.body.style.overflow = 'hidden';
+        }
+    },
+    unlock() {
+        if (this.locks > 0) {
+            this.locks--;
+            if (this.locks === 0) {
+                document.body.style.overflow = '';
+            }
+        }
+    }
+};
+
 // --- Dialog System ---
 
 function createDialogHTML(config) {
@@ -131,7 +150,7 @@ window.showDialog = function (config) {
     }
 
     // Scroll lock
-    document.body.style.overflow = 'hidden';
+    ScrollLockManager.lock();
 };
 
 window.closeDialog = function () {
@@ -147,7 +166,7 @@ window.closeDialog = function () {
     setTimeout(() => {
         const container = document.getElementById('confirm-dialog-container');
         if (container) container.remove();
-        document.body.style.overflow = 'unset';
+        ScrollLockManager.unlock();
     }, 200);
 };
 

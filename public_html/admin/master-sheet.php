@@ -20,6 +20,10 @@
                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                             Master Sheet
                         </a>
+                        <a href="/admin/khidmat-requests.php" class="px-3 py-1.5 rounded-md text-[#DBE2EF] hover:text-white hover:bg-white/10 text-sm font-medium transition-all flex items-center gap-2">
+                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            Requests
+                        </a>
                     </div>
                 </div>
                 <p class="text-[#DBE2EF] text-sm font-light">
@@ -226,7 +230,7 @@
                 </td>
                 <td class="px-6 py-4">
                     <span class="px-2 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${getPreferenceClass(reg.preference)}">
-                        ${reg.preference}
+                        ${Array.isArray(reg.preference) ? reg.preference.join(', ') : reg.preference}
                     </span>
                 </td>
                 <td class="px-6 py-4">
@@ -251,10 +255,26 @@
     }
 
     function getPreferenceClass(pref) {
+        // pref may be array or string. Choose class based on presence of key items.
+        if (Array.isArray(pref)) {
+            if (pref.includes('Azaan') && pref.includes('Takhbira')) return 'bg-purple-100 text-purple-700';
+            if (pref.includes('Azaan')) return 'bg-blue-100 text-blue-700';
+            if (pref.includes('Takhbira')) return 'bg-indigo-100 text-indigo-700';
+            if (pref.includes('Sanah')) return 'bg-teal-100 text-teal-700';
+            if (pref.includes('Tajweed Quran Tilawat')) return 'bg-yellow-100 text-yellow-700';
+            if (pref.includes('Dua e Joshan')) return 'bg-rose-100 text-rose-700';
+            if (pref.includes('Yaseen')) return 'bg-gray-100 text-gray-700';
+            return 'bg-gray-100 text-gray-700';
+        }
+        // legacy string values
         switch(pref) {
             case 'AZAAN': return 'bg-blue-100 text-blue-700';
             case 'TAKHBIRA': return 'bg-indigo-100 text-indigo-700';
             case 'BOTH': return 'bg-purple-100 text-purple-700';
+            case 'SANAH': return 'bg-teal-100 text-teal-700';
+            case 'TAJWEED QURAN TILAWAT': return 'bg-yellow-100 text-yellow-700';
+            case 'DUA E JOSHAN': return 'bg-rose-100 text-rose-700';
+            case 'YASEEN': return 'bg-gray-100 text-gray-700';
             default: return 'bg-gray-100 text-gray-700';
         }
     }
