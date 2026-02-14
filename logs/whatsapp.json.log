@@ -1,0 +1,677 @@
+{"timestamp": "2026-02-13 11:34:12,413", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'test_template' to ********3210 with params: ['param1']"}
+{"timestamp": "2026-02-13 11:34:12,413", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.TEST12345 | To: ********3210"}
+{"timestamp": "2026-02-13 11:34:12,413", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'test_template' to ********3210 with params: ['param1']"}
+{"timestamp": "2026-02-13 11:34:12,414", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 100 | Msg: Invalid Parameter"}
+{"timestamp": "2026-02-13 11:34:12,414", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "Invalid Parameter", "code": 100}}"}
+{"timestamp": "2026-02-13 11:34:12,442", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 35 (Test User). Will schedule tasks after commit."}
+{"timestamp": "2026-02-13 11:34:12,442", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 35"}
+{"timestamp": "2026-02-13 11:34:12,443", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 35"}
+{"timestamp": "2026-02-13 11:34:12,443", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 35"}
+{"timestamp": "2026-02-13 11:34:12,444", "level": "INFO", "module": "webhook_views", "message": "[Webhook] Status Update: wamid.WEBHOOK_TEST -> DELIVERED"}
+{"timestamp": "2026-02-13 13:27:04,419", "level": "WARNING", "module": "webhook_views", "message": "Webhook Verification Failed. Token: None"}
+{"timestamp": "2026-02-13 13:51:08,386", "level": "INFO", "module": "webhook_views", "message": "{"event": "webhook_verified"}"}
+{"timestamp": "2026-02-13 13:52:01,311", "level": "INFO", "module": "webhook_views", "message": "{"event": "webhook_verified"}"}
+{"timestamp": "2026-02-13 13:53:19,893", "level": "INFO", "module": "webhook_views", "message": "{"event": "webhook_verified"}"}
+{"timestamp": "2026-02-13 14:02:33,861", "level": "INFO", "module": "webhook_views", "message": "{"event": "webhook_verified"}"}
+{"timestamp": "2026-02-13 14:03:52,429", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 14:03:52,470", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 36 (Mukarram). Will schedule tasks after commit."}
+{"timestamp": "2026-02-13 14:03:52,470", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 36"}
+{"timestamp": "2026-02-13 14:03:52,474", "level": "INFO", "module": "views", "message": "Saved 1 user uploaded files synchronously."}
+{"timestamp": "2026-02-13 14:03:52,474", "level": "INFO", "module": "views", "message": "New registration created: Mukarram (60451866)"}
+{"timestamp": "2026-02-13 14:03:52,478", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.0488s"}
+{"timestamp": "2026-02-13 14:03:52,481", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 36"}
+{"timestamp": "2026-02-13 14:03:52,481", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 36"}
+{"timestamp": "2026-02-13 14:03:52,630", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 14:03:52,630", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 14:03:52,796", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=36"}
+{"timestamp": "2026-02-13 14:03:53,083", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-13 14:03:53,085", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-13 14:03:53,088", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 60451866"}
+{"timestamp": "2026-02-13 14:03:54,324", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-13 14:03:55,111", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-13 14:03:55,113", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 36"}
+{"timestamp": "2026-02-13 14:03:55,113", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-13 14:03:55,116", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['Mukarram']"}
+{"timestamp": "2026-02-13 14:03:55,392", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-13 14:03:55,392", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-13 14:03:55,428", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: Constructed HYPERLINK for 60451866: =HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/60451866_mukarram_azaan_T4E7sMF.mp4", "60451866_mukarram_azaan_T4E7sMF.mp4")"}
+{"timestamp": "2026-02-13 14:03:55,430", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='=HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/60451866_mukarram_azaan_T4E7sMF.mp4", "60451866_mukarram_azaan_T4E7sMF.mp4")', starts_with_equals=True, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-13 14:03:55,430", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-13 14:03:55,811", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSNTA1NTRDNkQxQzEyRDVENTE0AA== | To: ********9787"}
+{"timestamp": "2026-02-13 14:03:55,832", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Completed for registration_id=36"}
+{"timestamp": "2026-02-13 14:03:55,980", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 60451866 appended."}
+{"timestamp": "2026-02-13 14:04:04,999", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 14:21:14,848", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 14:21:14,910", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 37 (mukbambot118@gmail.com). Will schedule tasks after commit."}
+{"timestamp": "2026-02-13 14:21:14,910", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 37"}
+{"timestamp": "2026-02-13 14:21:14,918", "level": "INFO", "module": "views", "message": "Saved 1 user uploaded files synchronously."}
+{"timestamp": "2026-02-13 14:21:14,918", "level": "INFO", "module": "views", "message": "New registration created: mukbambot118@gmail.com (60451866)"}
+{"timestamp": "2026-02-13 14:21:14,922", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.0742s"}
+{"timestamp": "2026-02-13 14:21:14,929", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 37"}
+{"timestamp": "2026-02-13 14:21:14,930", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 37"}
+{"timestamp": "2026-02-13 14:21:15,053", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 14:21:15,054", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 14:21:15,057", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=37"}
+{"timestamp": "2026-02-13 14:21:15,070", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 60451866"}
+{"timestamp": "2026-02-13 14:21:15,070", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-13 14:21:15,071", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-13 14:21:15,540", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-13 14:21:16,526", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-13 14:21:16,527", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-13 14:21:16,530", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: Constructed HYPERLINK for 60451866: =HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/60451866_mukbambot118gmailcom_azaan.mp4", "60451866_mukbambot118gmailcom_azaan.mp4")"}
+{"timestamp": "2026-02-13 14:21:16,531", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='=HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/60451866_mukbambot118gmailcom_azaan.mp4", "60451866_mukbambot118gmailcom_azaan.mp4")', starts_with_equals=True, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-13 14:21:16,531", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-13 14:21:16,751", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-13 14:21:16,752", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 37"}
+{"timestamp": "2026-02-13 14:21:16,752", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-13 14:21:16,752", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['mukbambot118@gmail.com']"}
+{"timestamp": "2026-02-13 14:21:16,975", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 60451866 appended."}
+{"timestamp": "2026-02-13 14:21:17,372", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSNkQyRUZCQkU3RkUyOTUxMTAwAA== | To: ********9787"}
+{"timestamp": "2026-02-13 14:21:17,380", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Completed for registration_id=37"}
+{"timestamp": "2026-02-13 14:21:25,480", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 14:24:02,363", "level": "INFO", "module": "signals", "message": "[Signal] duty_assignment_post_save: New duty 9 assigned to mukbambot118@gmail.com. Will schedule task after commit."}
+{"timestamp": "2026-02-13 14:24:02,363", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for duty 9"}
+{"timestamp": "2026-02-13 14:24:02,371", "level": "INFO", "module": "__init__", "message": "Created reminder 9 for 2026-02-15 - Fajar Azaan → mukbambot118@gmail.com, scheduled at 2026-02-14 18:00:00+05:30"}
+{"timestamp": "2026-02-13 14:24:02,373", "level": "INFO", "module": "views", "message": "Duty assigned: 2026-02-15 - Fajar Azaan → mukbambot118@gmail.com, Reminder: 9"}
+{"timestamp": "2026-02-13 14:24:02,383", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing send_duty_allotment_notification_task for duty 9"}
+{"timestamp": "2026-02-13 14:24:02,387", "level": "INFO", "module": "signals", "message": "[OnCommit] Task scheduled for duty 9: THREADED_EXECUTION"}
+{"timestamp": "2026-02-13 14:24:02,418", "level": "INFO", "module": "__init__", "message": "Task send_duty_allotment_notification_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 14:24:02,428", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=9"}
+{"timestamp": "2026-02-13 14:24:02,470", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-13 14:24:02,475", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-13 14:24:04,564", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-13 14:24:04,565", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-13 14:24:04,566", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********9787 with params: ['mukbambot118@gmail.com', '15 February 2026', 'Fajar Azaan']"}
+{"timestamp": "2026-02-13 14:24:05,185", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSNzg0MkQwN0E3MDVBRDc0NjA0AA== | To: ********9787"}
+{"timestamp": "2026-02-13 14:24:05,196", "level": "INFO", "module": "tasks", "message": "[Task] WhatsApp sent to 918925769787 (ID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSNzg0MkQwN0E3MDVBRDc0NjA0AA==)"}
+{"timestamp": "2026-02-13 14:24:05,197", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Completed for duty_assignment_id=9"}
+{"timestamp": "2026-02-13 14:24:28,931", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 15:20:55,840", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 15:20:55,987", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.1474s"}
+{"timestamp": "2026-02-13 15:21:09,505", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 15:21:09,526", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.0212s"}
+{"timestamp": "2026-02-13 15:21:27,055", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 15:21:27,108", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 38 (Mukarram). Will schedule tasks after commit."}
+{"timestamp": "2026-02-13 15:21:27,109", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 38"}
+{"timestamp": "2026-02-13 15:21:27,138", "level": "INFO", "module": "views", "message": "Saved 1 user uploaded files synchronously."}
+{"timestamp": "2026-02-13 15:21:27,139", "level": "INFO", "module": "views", "message": "New registration created: Mukarram (60451865)"}
+{"timestamp": "2026-02-13 15:21:27,157", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.1020s"}
+{"timestamp": "2026-02-13 15:21:27,162", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 38"}
+{"timestamp": "2026-02-13 15:21:27,172", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 38"}
+{"timestamp": "2026-02-13 15:21:27,251", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 15:21:27,253", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 15:21:27,270", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 60451865"}
+{"timestamp": "2026-02-13 15:21:27,313", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=38"}
+{"timestamp": "2026-02-13 15:21:27,398", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-13 15:21:27,400", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-13 15:21:28,375", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-13 15:21:29,427", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-13 15:21:29,427", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-13 15:21:29,456", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: Constructed HYPERLINK for 60451865: =HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/60451865_mukarram_both.mp4", "60451865_mukarram_both.mp4")"}
+{"timestamp": "2026-02-13 15:21:29,457", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='=HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/60451865_mukarram_both.mp4", "60451865_mukarram_both.mp4")', starts_with_equals=True, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-13 15:21:29,457", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-13 15:21:29,784", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-13 15:21:29,785", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 38"}
+{"timestamp": "2026-02-13 15:21:29,785", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-13 15:21:29,789", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['Mukarram']"}
+{"timestamp": "2026-02-13 15:21:29,999", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 60451865 appended."}
+{"timestamp": "2026-02-13 15:21:31,689", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSQzYwODIxRDQ0RDZGMjkwMjQzAA== | To: ********9787"}
+{"timestamp": "2026-02-13 15:21:31,719", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Completed for registration_id=38"}
+{"timestamp": "2026-02-13 15:21:39,715", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 16:17:31,707", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 16:17:31,818", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 39 (Mukarram). Will schedule tasks after commit."}
+{"timestamp": "2026-02-13 16:17:31,819", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 39"}
+{"timestamp": "2026-02-13 16:17:31,960", "level": "INFO", "module": "views", "message": "Saved 1 user uploaded files synchronously."}
+{"timestamp": "2026-02-13 16:17:31,960", "level": "INFO", "module": "views", "message": "New registration created: Mukarram (60451866)"}
+{"timestamp": "2026-02-13 16:17:31,966", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.2604s"}
+{"timestamp": "2026-02-13 16:17:31,973", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 39"}
+{"timestamp": "2026-02-13 16:17:31,986", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 39"}
+{"timestamp": "2026-02-13 16:17:32,153", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 16:17:32,154", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 16:17:32,302", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=39"}
+{"timestamp": "2026-02-13 16:17:32,437", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-13 16:17:32,442", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-13 16:17:32,444", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 60451866"}
+{"timestamp": "2026-02-13 16:17:34,430", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-13 16:17:34,432", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 39"}
+{"timestamp": "2026-02-13 16:17:34,433", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-13 16:17:34,438", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['Mukarram']"}
+{"timestamp": "2026-02-13 16:17:35,089", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-13 16:17:35,134", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSNjZFNDVCOEM4MEVCRjk2QkRBAA== | To: ********9787"}
+{"timestamp": "2026-02-13 16:17:35,154", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Completed for registration_id=39"}
+{"timestamp": "2026-02-13 16:17:36,170", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-13 16:17:36,170", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-13 16:17:36,200", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: Constructed HYPERLINK for 60451866: =HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/60451866_mukarram_azaan_bI69c1Q.mp4", "60451866_mukarram_azaan_bI69c1Q.mp4")"}
+{"timestamp": "2026-02-13 16:17:36,203", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='=HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/60451866_mukarram_azaan_bI69c1Q.mp4", "60451866_mukarram_azaan_bI69c1Q.mp4")', starts_with_equals=True, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-13 16:17:36,204", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-13 16:17:36,758", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 60451866 appended."}
+{"timestamp": "2026-02-13 16:17:43,542", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 18:20:01,013", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 18:20:01,080", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.0667s"}
+{"timestamp": "2026-02-13 18:20:10,563", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 18:20:10,644", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.0807s"}
+{"timestamp": "2026-02-13 18:20:18,242", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 18:20:18,334", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 40 (Mukarram). Will schedule tasks after commit."}
+{"timestamp": "2026-02-13 18:20:18,336", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 40"}
+{"timestamp": "2026-02-13 18:20:18,352", "level": "INFO", "module": "views", "message": "Saved 1 user uploaded files synchronously."}
+{"timestamp": "2026-02-13 18:20:18,352", "level": "INFO", "module": "views", "message": "New registration created: Mukarram (60451868)"}
+{"timestamp": "2026-02-13 18:20:18,364", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.1221s"}
+{"timestamp": "2026-02-13 18:20:18,368", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 40"}
+{"timestamp": "2026-02-13 18:20:18,382", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 40"}
+{"timestamp": "2026-02-13 18:20:18,536", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 18:20:18,538", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 18:20:18,542", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=40"}
+{"timestamp": "2026-02-13 18:20:18,556", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukbambot11j8@gmail.com"}
+{"timestamp": "2026-02-13 18:20:18,557", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukbambot11j8@gmail.com"}
+{"timestamp": "2026-02-13 18:20:18,556", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 60451868"}
+{"timestamp": "2026-02-13 18:20:19,677", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-13 18:20:20,580", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-13 18:20:20,581", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-13 18:20:20,585", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: Constructed HYPERLINK for 60451868: =HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/60451868_mukarram_azaan.mp4", "60451868_mukarram_azaan.mp4")"}
+{"timestamp": "2026-02-13 18:20:20,585", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='=HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/60451868_mukarram_azaan.mp4", "60451868_mukarram_azaan.mp4")', starts_with_equals=True, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-13 18:20:20,585", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-13 18:20:20,618", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot11j8@gmail.com"}
+{"timestamp": "2026-02-13 18:20:20,619", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 40"}
+{"timestamp": "2026-02-13 18:20:20,619", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-13 18:20:20,619", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['Mukarram']"}
+{"timestamp": "2026-02-13 18:20:21,237", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSM0JFNjMxNjZDQUFDRjRBN0I2AA== | To: ********9787"}
+{"timestamp": "2026-02-13 18:20:21,246", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Completed for registration_id=40"}
+{"timestamp": "2026-02-13 18:20:21,657", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 60451868 appended."}
+{"timestamp": "2026-02-13 18:20:31,097", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 18:20:31,789", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 18:20:37,040", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 18:22:48,179", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 18:22:48,202", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 41 (Kfjfcggf). Will schedule tasks after commit."}
+{"timestamp": "2026-02-13 18:22:48,203", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 41"}
+{"timestamp": "2026-02-13 18:22:48,235", "level": "INFO", "module": "views", "message": "Saved 1 user uploaded files synchronously."}
+{"timestamp": "2026-02-13 18:22:48,236", "level": "INFO", "module": "views", "message": "New registration created: Kfjfcggf (12345678)"}
+{"timestamp": "2026-02-13 18:22:48,241", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.0623s"}
+{"timestamp": "2026-02-13 18:22:48,249", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 41"}
+{"timestamp": "2026-02-13 18:22:48,255", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 41"}
+{"timestamp": "2026-02-13 18:22:48,275", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 18:22:48,279", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 18:22:48,282", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=41"}
+{"timestamp": "2026-02-13 18:22:48,289", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 12345678"}
+{"timestamp": "2026-02-13 18:22:48,289", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to jambambot084@gmail.com"}
+{"timestamp": "2026-02-13 18:22:48,290", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to jambambot084@gmail.com"}
+{"timestamp": "2026-02-13 18:22:50,165", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to jambambot084@gmail.com"}
+{"timestamp": "2026-02-13 18:22:50,167", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 41"}
+{"timestamp": "2026-02-13 18:22:50,167", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 919840538688"}
+{"timestamp": "2026-02-13 18:22:50,170", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********8688 with params: ['Kfjfcggf']"}
+{"timestamp": "2026-02-13 18:22:50,505", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-13 18:22:50,850", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE5ODQwNTM4Njg4FQIAERgSQzE0RTUxNTlGMTUwMzg4MzY4AA== | To: ********8688"}
+{"timestamp": "2026-02-13 18:22:50,865", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Completed for registration_id=41"}
+{"timestamp": "2026-02-13 18:22:51,186", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-13 18:22:51,187", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-13 18:22:51,219", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: Constructed HYPERLINK for 12345678: =HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/12345678_kfjfcggf_both.mp4", "12345678_kfjfcggf_both.mp4")"}
+{"timestamp": "2026-02-13 18:22:51,221", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='=HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/12345678_kfjfcggf_both.mp4", "12345678_kfjfcggf_both.mp4")', starts_with_equals=True, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-13 18:22:51,221", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-13 18:22:51,673", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 12345678 appended."}
+{"timestamp": "2026-02-13 18:23:01,442", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 18:23:03,076", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 18:23:25,328", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-13 18:23:25,341", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 42 (Taiyeb Bambot). Will schedule tasks after commit."}
+{"timestamp": "2026-02-13 18:23:25,342", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 42"}
+{"timestamp": "2026-02-13 18:23:25,364", "level": "INFO", "module": "views", "message": "Saved 1 user uploaded files synchronously."}
+{"timestamp": "2026-02-13 18:23:25,364", "level": "INFO", "module": "views", "message": "New registration created: Taiyeb Bambot (09876543)"}
+{"timestamp": "2026-02-13 18:23:25,367", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.0385s"}
+{"timestamp": "2026-02-13 18:23:25,371", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 42"}
+{"timestamp": "2026-02-13 18:23:25,372", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 42"}
+{"timestamp": "2026-02-13 18:23:25,388", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 18:23:25,391", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=42"}
+{"timestamp": "2026-02-13 18:23:25,393", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-13 18:23:25,397", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to taiyebbambot453@gmail.com"}
+{"timestamp": "2026-02-13 18:23:25,398", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to taiyebbambot453@gmail.com"}
+{"timestamp": "2026-02-13 18:23:25,400", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 09876543"}
+{"timestamp": "2026-02-13 18:23:26,930", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-13 18:23:27,469", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-13 18:23:27,469", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-13 18:23:27,472", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: Constructed HYPERLINK for 09876543: =HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/09876543_taiyeb_bambot_both.mp4", "09876543_taiyeb_bambot_both.mp4")"}
+{"timestamp": "2026-02-13 18:23:27,472", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='=HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/09876543_taiyeb_bambot_both.mp4", "09876543_taiyeb_bambot_both.mp4")', starts_with_equals=True, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-13 18:23:27,472", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-13 18:23:28,799", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 09876543 appended."}
+{"timestamp": "2026-02-13 18:23:29,839", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to taiyebbambot453@gmail.com"}
+{"timestamp": "2026-02-13 18:23:29,841", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 42"}
+{"timestamp": "2026-02-13 18:23:29,841", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 919884552786"}
+{"timestamp": "2026-02-13 18:23:29,841", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********2786 with params: ['Taiyeb Bambot']"}
+{"timestamp": "2026-02-13 18:23:30,366", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE5ODg0NTUyNzg2FQIAERgSRjQwMTNCRjg2NUVGRjQ4MTYwAA== | To: ********2786"}
+{"timestamp": "2026-02-13 18:23:30,374", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Completed for registration_id=42"}
+{"timestamp": "2026-02-13 18:23:41,794", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 18:23:42,501", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-13 18:23:47,347", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 02:01:34,697", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-14 02:01:34,983", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 43 (Huzaifa). Will schedule tasks after commit."}
+{"timestamp": "2026-02-14 02:01:34,985", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 43"}
+{"timestamp": "2026-02-14 02:01:35,036", "level": "INFO", "module": "views", "message": "Saved 1 user uploaded files synchronously."}
+{"timestamp": "2026-02-14 02:01:35,037", "level": "INFO", "module": "views", "message": "New registration created: Huzaifa (40414853)"}
+{"timestamp": "2026-02-14 02:01:35,069", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.3718s"}
+{"timestamp": "2026-02-14 02:01:35,078", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 43"}
+{"timestamp": "2026-02-14 02:01:35,096", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 43"}
+{"timestamp": "2026-02-14 02:01:35,309", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 02:01:35,310", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 02:01:35,444", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=43"}
+{"timestamp": "2026-02-14 02:01:35,600", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 02:01:35,602", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 02:01:35,606", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 40414853"}
+{"timestamp": "2026-02-14 02:01:37,175", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-14 02:01:38,225", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-14 02:01:38,225", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-14 02:01:38,263", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: Constructed HYPERLINK for 40414853: =HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/40414853_huzaifa_azaan.mp4", "40414853_huzaifa_azaan.mp4")"}
+{"timestamp": "2026-02-14 02:01:38,267", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='=HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/40414853_huzaifa_azaan.mp4", "40414853_huzaifa_azaan.mp4")', starts_with_equals=True, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-14 02:01:38,267", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-14 02:01:38,803", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 40414853 appended."}
+{"timestamp": "2026-02-14 02:01:43,804", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 02:01:43,805", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 43"}
+{"timestamp": "2026-02-14 02:01:43,805", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 02:01:43,808", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********6252 with params: ['Huzaifa']"}
+{"timestamp": "2026-02-14 02:01:44,507", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE5Njc3Mjk2MjUyFQIAERgSRkJBOTEyRkUxMzk3RTc0RkZEAA== | To: ********6252"}
+{"timestamp": "2026-02-14 02:01:44,528", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Completed for registration_id=43"}
+{"timestamp": "2026-02-14 02:01:54,841", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 02:01:59,439", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 02:07:15,827", "level": "INFO", "module": "signals", "message": "[Signal] duty_assignment_post_save: New duty 10 assigned to Huzaifa. Will schedule task after commit."}
+{"timestamp": "2026-02-14 02:07:15,827", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for duty 10"}
+{"timestamp": "2026-02-14 02:07:15,836", "level": "INFO", "module": "__init__", "message": "Created reminder 10 for 2026-02-14 - Fajar Azaan → Huzaifa, scheduled at 2026-02-13 18:00:00+05:30"}
+{"timestamp": "2026-02-14 02:07:15,836", "level": "INFO", "module": "views", "message": "Duty assigned: 2026-02-14 - Fajar Azaan → Huzaifa, Reminder: 10"}
+{"timestamp": "2026-02-14 02:07:15,841", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing send_duty_allotment_notification_task for duty 10"}
+{"timestamp": "2026-02-14 02:07:15,842", "level": "INFO", "module": "signals", "message": "[OnCommit] Task scheduled for duty 10: THREADED_EXECUTION"}
+{"timestamp": "2026-02-14 02:07:15,853", "level": "INFO", "module": "__init__", "message": "Task send_duty_allotment_notification_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 02:07:15,861", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=10"}
+{"timestamp": "2026-02-14 02:07:15,880", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 02:07:15,883", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 02:07:17,748", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 02:07:17,749", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 02:07:17,752", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********6252 with params: ['Huzaifa', '14 February 2026', 'Fajar Azaan']"}
+{"timestamp": "2026-02-14 02:07:18,337", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE5Njc3Mjk2MjUyFQIAERgSODY4MDM4NkYzNTBFQkI2MjA2AA== | To: ********6252"}
+{"timestamp": "2026-02-14 02:07:18,349", "level": "INFO", "module": "tasks", "message": "[Task] WhatsApp sent to 919677296252 (ID: wamid.HBgMOTE5Njc3Mjk2MjUyFQIAERgSODY4MDM4NkYzNTBFQkI2MjA2AA==)"}
+{"timestamp": "2026-02-14 02:07:18,349", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Completed for duty_assignment_id=10"}
+{"timestamp": "2026-02-14 02:07:24,127", "level": "INFO", "module": "signals", "message": "[Signal] duty_assignment_post_save: New duty 11 assigned to Huzaifa. Will schedule task after commit."}
+{"timestamp": "2026-02-14 02:07:24,129", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for duty 11"}
+{"timestamp": "2026-02-14 02:07:24,148", "level": "INFO", "module": "__init__", "message": "Created reminder 11 for 2026-02-14 - Fajar Takbira → Huzaifa, scheduled at 2026-02-13 18:00:00+05:30"}
+{"timestamp": "2026-02-14 02:07:24,148", "level": "INFO", "module": "views", "message": "Duty assigned: 2026-02-14 - Fajar Takbira → Huzaifa, Reminder: 11"}
+{"timestamp": "2026-02-14 02:07:24,181", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing send_duty_allotment_notification_task for duty 11"}
+{"timestamp": "2026-02-14 02:07:24,193", "level": "INFO", "module": "signals", "message": "[OnCommit] Task scheduled for duty 11: THREADED_EXECUTION"}
+{"timestamp": "2026-02-14 02:07:24,717", "level": "INFO", "module": "__init__", "message": "Task send_duty_allotment_notification_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 02:07:24,718", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=11"}
+{"timestamp": "2026-02-14 02:07:24,726", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 02:07:24,726", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 02:07:26,069", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 02:07:26,523", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 02:07:26,523", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 02:07:26,523", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********6252 with params: ['Huzaifa', '14 February 2026', 'Fajar Takbira']"}
+{"timestamp": "2026-02-14 02:07:26,874", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 02:07:27,345", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE5Njc3Mjk2MjUyFQIAERgSRjI5RkYzRTNFNDMzOTdCODAwAA== | To: ********6252"}
+{"timestamp": "2026-02-14 02:07:27,351", "level": "INFO", "module": "tasks", "message": "[Task] WhatsApp sent to 919677296252 (ID: wamid.HBgMOTE5Njc3Mjk2MjUyFQIAERgSRjI5RkYzRTNFNDMzOTdCODAwAA==)"}
+{"timestamp": "2026-02-14 02:07:27,352", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Completed for duty_assignment_id=11"}
+{"timestamp": "2026-02-14 02:07:30,148", "level": "INFO", "module": "signals", "message": "[Signal] duty_assignment_post_save: New duty 12 assigned to Taiyeb Bambot. Will schedule task after commit."}
+{"timestamp": "2026-02-14 02:07:30,148", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for duty 12"}
+{"timestamp": "2026-02-14 02:07:30,150", "level": "INFO", "module": "__init__", "message": "Created reminder 12 for 2026-02-14 - Zohar Azaan → Taiyeb Bambot, scheduled at 2026-02-13 18:00:00+05:30"}
+{"timestamp": "2026-02-14 02:07:30,150", "level": "INFO", "module": "views", "message": "Duty assigned: 2026-02-14 - Zohar Azaan → Taiyeb Bambot, Reminder: 12"}
+{"timestamp": "2026-02-14 02:07:30,156", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing send_duty_allotment_notification_task for duty 12"}
+{"timestamp": "2026-02-14 02:07:30,158", "level": "INFO", "module": "signals", "message": "[OnCommit] Task scheduled for duty 12: THREADED_EXECUTION"}
+{"timestamp": "2026-02-14 02:07:30,170", "level": "INFO", "module": "__init__", "message": "Task send_duty_allotment_notification_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 02:07:30,171", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=12"}
+{"timestamp": "2026-02-14 02:07:30,182", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to taiyebbambot453@gmail.com"}
+{"timestamp": "2026-02-14 02:07:30,183", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to taiyebbambot453@gmail.com"}
+{"timestamp": "2026-02-14 02:07:31,990", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to taiyebbambot453@gmail.com"}
+{"timestamp": "2026-02-14 02:07:31,991", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919884552786"}
+{"timestamp": "2026-02-14 02:07:31,991", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********2786 with params: ['Taiyeb Bambot', '14 February 2026', 'Zohar Azaan']"}
+{"timestamp": "2026-02-14 02:07:32,539", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE5ODg0NTUyNzg2FQIAERgSQ0VEMjlEQUQ4QTc2QzNCQjBBAA== | To: ********2786"}
+{"timestamp": "2026-02-14 02:07:32,547", "level": "INFO", "module": "tasks", "message": "[Task] WhatsApp sent to 919884552786 (ID: wamid.HBgMOTE5ODg0NTUyNzg2FQIAERgSQ0VEMjlEQUQ4QTc2QzNCQjBBAA==)"}
+{"timestamp": "2026-02-14 02:07:32,548", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Completed for duty_assignment_id=12"}
+{"timestamp": "2026-02-14 02:07:35,024", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 02:07:35,778", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 02:07:39,218", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 02:07:41,638", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 02:41:53,793", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 03:18:23,351", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 03:41:43,808", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 06:45:11,211", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 06:46:24,941", "level": "INFO", "module": "signals", "message": "[Signal] duty_assignment_post_save: New duty 13 assigned to Mukarram. Will schedule task after commit."}
+{"timestamp": "2026-02-14 06:46:24,943", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for duty 13"}
+{"timestamp": "2026-02-14 06:46:24,961", "level": "INFO", "module": "__init__", "message": "Created reminder 13 for 2026-02-17 - Fajar Azaan → Mukarram, scheduled at 2026-02-16 18:00:00+05:30"}
+{"timestamp": "2026-02-14 06:46:24,961", "level": "INFO", "module": "views", "message": "Duty assigned: 2026-02-17 - Fajar Azaan → Mukarram, Reminder: 13"}
+{"timestamp": "2026-02-14 06:46:24,974", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing send_duty_allotment_notification_task for duty 13"}
+{"timestamp": "2026-02-14 06:46:24,985", "level": "INFO", "module": "signals", "message": "[OnCommit] Task scheduled for duty 13: THREADED_EXECUTION"}
+{"timestamp": "2026-02-14 06:46:25,113", "level": "INFO", "module": "__init__", "message": "Task send_duty_allotment_notification_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 06:46:25,226", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=13"}
+{"timestamp": "2026-02-14 06:46:25,373", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 06:46:25,383", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 06:46:27,710", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 06:46:27,711", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 06:46:27,714", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********9787 with params: ['Mukarram', '17 February 2026', 'Fajar Azaan']"}
+{"timestamp": "2026-02-14 06:46:28,341", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSRDAyMEI0RTlFOThBQUQzRjY1AA== | To: ********9787"}
+{"timestamp": "2026-02-14 06:46:28,353", "level": "INFO", "module": "tasks", "message": "[Task] WhatsApp sent to 918925769787 (ID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSRDAyMEI0RTlFOThBQUQzRjY1AA==)"}
+{"timestamp": "2026-02-14 06:46:28,354", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Completed for duty_assignment_id=13"}
+{"timestamp": "2026-02-14 06:46:28,500", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 06:46:38,336", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 06:46:38,417", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 06:46:50,962", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 06:46:55,775", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 06:49:07,497", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 06:49:34,264", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 08:20:17,411", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 09:24:42,875", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-14 09:24:42,987", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 44 (Mukarram). Will schedule tasks after commit."}
+{"timestamp": "2026-02-14 09:24:42,989", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 44"}
+{"timestamp": "2026-02-14 09:24:42,989", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.1154s"}
+{"timestamp": "2026-02-14 09:24:43,006", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 44"}
+{"timestamp": "2026-02-14 09:24:43,018", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 44"}
+{"timestamp": "2026-02-14 09:24:43,283", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 09:24:43,285", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 09:24:43,351", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=44"}
+{"timestamp": "2026-02-14 09:24:43,476", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 09:24:43,476", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 09:24:43,478", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 60451866"}
+{"timestamp": "2026-02-14 09:24:44,446", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-14 09:24:45,367", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-14 09:24:45,367", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-14 09:24:45,415", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='', starts_with_equals=False, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-14 09:24:45,415", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-14 09:24:45,958", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 60451866 appended."}
+{"timestamp": "2026-02-14 09:24:50,819", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 09:24:50,822", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 44"}
+{"timestamp": "2026-02-14 09:24:50,824", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 09:24:50,825", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['Mukarram']"}
+{"timestamp": "2026-02-14 09:24:51,938", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSNTE3NEE0NjMyRUEwNjBFMTZEAA== | To: ********9787"}
+{"timestamp": "2026-02-14 09:24:51,955", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Completed for registration_id=44"}
+{"timestamp": "2026-02-14 09:25:00,898", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 09:25:03,047", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 09:25:20,831", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 09:38:46,237", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 09:38:52,545", "level": "INFO", "module": "signals", "message": "[Signal] duty_assignment_post_save: New duty 14 assigned to Mukarram. Will schedule task after commit."}
+{"timestamp": "2026-02-14 09:38:52,546", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for duty 14"}
+{"timestamp": "2026-02-14 09:38:52,552", "level": "INFO", "module": "__init__", "message": "Created reminder 14 for 2026-02-14 - Fajar Azaan → Mukarram, scheduled at 2026-02-13 18:00:00+05:30"}
+{"timestamp": "2026-02-14 09:38:52,553", "level": "INFO", "module": "views", "message": "Duty assigned: 2026-02-14 - Fajar Azaan → Mukarram, Reminder: 14"}
+{"timestamp": "2026-02-14 09:38:52,561", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing send_duty_allotment_notification_task for duty 14"}
+{"timestamp": "2026-02-14 09:38:52,569", "level": "INFO", "module": "signals", "message": "[OnCommit] Task scheduled for duty 14: THREADED_EXECUTION"}
+{"timestamp": "2026-02-14 09:38:52,768", "level": "INFO", "module": "__init__", "message": "Task send_duty_allotment_notification_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 09:38:52,773", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=14"}
+{"timestamp": "2026-02-14 09:38:52,786", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 09:38:52,787", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 09:38:54,554", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 09:38:54,554", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 09:38:54,555", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********9787 with params: ['Mukarram', '14 February 2026', 'Fajar Azaan']"}
+{"timestamp": "2026-02-14 09:38:55,216", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] ✓ Success: 200 | MsgID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSNTNDRTZFNTQxNEVFMkRGMzgyAA== | To: ********9787"}
+{"timestamp": "2026-02-14 09:38:55,224", "level": "INFO", "module": "tasks", "message": "[Task] WhatsApp sent to 918925769787 (ID: wamid.HBgMOTE4OTI1NzY5Nzg3FQIAERgSNTNDRTZFNTQxNEVFMkRGMzgyAA==)"}
+{"timestamp": "2026-02-14 09:38:55,224", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Completed for duty_assignment_id=14"}
+{"timestamp": "2026-02-14 09:39:03,496", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 09:39:04,176", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 09:39:05,824", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 09:39:15,380", "level": "ERROR", "module": "webhook_views", "message": "{"event": "processing_error", "error": "module 'django.utils.timezone' has no attribute 'utc'"}"}
+{"timestamp": "2026-02-14 09:39:25,170", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 09:47:16,206", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 10:00:48,000", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 10:01:18,329", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 10:05:43,748", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 40414040"}
+{"timestamp": "2026-02-14 10:14:50,069", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 11:21:16,251", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 12:38:32,889", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 12:44:13,210", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 13:26:45,616", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-14 13:26:45,767", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 45 (huzaifa). Will schedule tasks after commit."}
+{"timestamp": "2026-02-14 13:26:45,768", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 45"}
+{"timestamp": "2026-02-14 13:26:45,807", "level": "INFO", "module": "views", "message": "Saved 1 user uploaded files synchronously."}
+{"timestamp": "2026-02-14 13:26:45,807", "level": "INFO", "module": "views", "message": "New registration created: huzaifa (40414853)"}
+{"timestamp": "2026-02-14 13:26:45,836", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.2203s"}
+{"timestamp": "2026-02-14 13:26:45,842", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 45"}
+{"timestamp": "2026-02-14 13:26:45,854", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 45"}
+{"timestamp": "2026-02-14 13:26:46,021", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 13:26:46,024", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 13:26:46,148", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=45"}
+{"timestamp": "2026-02-14 13:26:46,273", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:26:46,275", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:26:46,280", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 40414853"}
+{"timestamp": "2026-02-14 13:26:47,711", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-14 13:26:48,679", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-14 13:26:48,679", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-14 13:26:48,715", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: Constructed HYPERLINK for 40414853: =HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/40414853_huzaifa_azaan_takhbira_sanah_tajweed_quran_tilawat_dua_e__wowo0DH.pdf", "40414853_huzaifa_azaan_takhbira_sanah_tajweed_quran_tilawat_dua_e__wowo0DH.pdf")"}
+{"timestamp": "2026-02-14 13:26:48,716", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='=HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/video/40414853_huzaifa_azaan_takhbira_sanah_tajweed_quran_tilawat_dua_e__wowo0DH.pdf", "40414853_huzaifa_azaan_takhbira_sanah_tajweed_quran_tilawat_dua_e__wowo0DH.pdf")', starts_with_equals=True, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-14 13:26:48,717", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-14 13:26:48,752", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:26:48,753", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 45"}
+{"timestamp": "2026-02-14 13:26:48,753", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:26:48,757", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********6252 with params: ['huzaifa']"}
+{"timestamp": "2026-02-14 13:26:49,186", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:26:49,187", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "ACAkStHLiRe0_DgB0wqRMGv"}}"}
+{"timestamp": "2026-02-14 13:26:49,260", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 40414853 appended."}
+{"timestamp": "2026-02-14 13:27:49,259", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=45"}
+{"timestamp": "2026-02-14 13:27:49,265", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:27:49,265", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:27:51,147", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:27:51,148", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 45"}
+{"timestamp": "2026-02-14 13:27:51,148", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:27:51,149", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********6252 with params: ['huzaifa']"}
+{"timestamp": "2026-02-14 13:27:51,822", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:27:51,822", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "AJv8wOFcEdAoT58i6-APprD"}}"}
+{"timestamp": "2026-02-14 13:28:11,359", "level": "INFO", "module": "signals", "message": "[Signal] duty_assignment_post_save: New duty 15 assigned to Mukarram. Will schedule task after commit."}
+{"timestamp": "2026-02-14 13:28:11,367", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for duty 15"}
+{"timestamp": "2026-02-14 13:28:11,384", "level": "INFO", "module": "__init__", "message": "Created reminder 15 for 2026-03-01 - Fajar Azaan → Mukarram, scheduled at 2026-02-28 18:00:00+05:30"}
+{"timestamp": "2026-02-14 13:28:11,385", "level": "INFO", "module": "views", "message": "Duty assigned: 2026-03-01 - Fajar Azaan → Mukarram, Reminder: 15"}
+{"timestamp": "2026-02-14 13:28:11,397", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing send_duty_allotment_notification_task for duty 15"}
+{"timestamp": "2026-02-14 13:28:11,412", "level": "INFO", "module": "signals", "message": "[OnCommit] Task scheduled for duty 15: THREADED_EXECUTION"}
+{"timestamp": "2026-02-14 13:28:11,577", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=15"}
+{"timestamp": "2026-02-14 13:28:11,583", "level": "INFO", "module": "__init__", "message": "Task send_duty_allotment_notification_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 13:28:11,596", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:28:11,596", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:28:13,395", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:28:13,396", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 13:28:13,397", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********9787 with params: ['Mukarram', '01 March 2026', 'Fajar Azaan']"}
+{"timestamp": "2026-02-14 13:28:13,639", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:28:13,639", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "A_zA5x8jdgkmyd_lAeRWXS8"}}"}
+{"timestamp": "2026-02-14 13:28:17,040", "level": "INFO", "module": "signals", "message": "[Signal] duty_assignment_post_save: New duty 16 assigned to huzaifa. Will schedule task after commit."}
+{"timestamp": "2026-02-14 13:28:17,042", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for duty 16"}
+{"timestamp": "2026-02-14 13:28:17,061", "level": "INFO", "module": "__init__", "message": "Created reminder 16 for 2026-02-14 - Fajar Takbira → huzaifa, scheduled at 2026-02-13 18:00:00+05:30"}
+{"timestamp": "2026-02-14 13:28:17,061", "level": "INFO", "module": "views", "message": "Duty assigned: 2026-02-14 - Fajar Takbira → huzaifa, Reminder: 16"}
+{"timestamp": "2026-02-14 13:28:17,088", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing send_duty_allotment_notification_task for duty 16"}
+{"timestamp": "2026-02-14 13:28:17,100", "level": "INFO", "module": "signals", "message": "[OnCommit] Task scheduled for duty 16: THREADED_EXECUTION"}
+{"timestamp": "2026-02-14 13:28:17,535", "level": "INFO", "module": "__init__", "message": "Task send_duty_allotment_notification_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 13:28:17,536", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=16"}
+{"timestamp": "2026-02-14 13:28:17,542", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:28:17,542", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:28:19,429", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:28:19,431", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:28:19,431", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********6252 with params: ['huzaifa', '14 February 2026', 'Fajar Takbira']"}
+{"timestamp": "2026-02-14 13:28:19,737", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:28:19,738", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "AG2t8_cXtLap6DbFD7rQheS"}}"}
+{"timestamp": "2026-02-14 13:28:20,962", "level": "INFO", "module": "signals", "message": "[Signal] duty_assignment_post_save: New duty 17 assigned to huzaifa. Will schedule task after commit."}
+{"timestamp": "2026-02-14 13:28:20,962", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for duty 17"}
+{"timestamp": "2026-02-14 13:28:20,969", "level": "INFO", "module": "__init__", "message": "Created reminder 17 for 2026-02-14 - Zohar Azaan → huzaifa, scheduled at 2026-02-13 18:00:00+05:30"}
+{"timestamp": "2026-02-14 13:28:20,972", "level": "INFO", "module": "views", "message": "Duty assigned: 2026-02-14 - Zohar Azaan → huzaifa, Reminder: 17"}
+{"timestamp": "2026-02-14 13:28:20,983", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing send_duty_allotment_notification_task for duty 17"}
+{"timestamp": "2026-02-14 13:28:20,984", "level": "INFO", "module": "signals", "message": "[OnCommit] Task scheduled for duty 17: THREADED_EXECUTION"}
+{"timestamp": "2026-02-14 13:28:20,998", "level": "INFO", "module": "__init__", "message": "Task send_duty_allotment_notification_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 13:28:21,000", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=17"}
+{"timestamp": "2026-02-14 13:28:21,008", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:28:21,008", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:28:22,871", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:28:22,873", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:28:22,873", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********6252 with params: ['huzaifa', '14 February 2026', 'Zohar Azaan']"}
+{"timestamp": "2026-02-14 13:28:23,122", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:28:23,123", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "A89SZMNmIP6zWP9GVDqkpiz"}}"}
+{"timestamp": "2026-02-14 13:28:32,202", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 13:28:51,852", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=45"}
+{"timestamp": "2026-02-14 13:28:51,856", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:28:51,856", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:28:53,639", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:28:53,639", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 45"}
+{"timestamp": "2026-02-14 13:28:53,639", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:28:53,639", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********6252 with params: ['huzaifa']"}
+{"timestamp": "2026-02-14 13:28:54,096", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:28:54,097", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "A2P4nlD1bM9_gqroKJjs38u"}}"}
+{"timestamp": "2026-02-14 13:29:13,643", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=15"}
+{"timestamp": "2026-02-14 13:29:13,648", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:29:13,648", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:29:15,360", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:29:15,360", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 13:29:15,360", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********9787 with params: ['Mukarram', '01 March 2026', 'Fajar Azaan']"}
+{"timestamp": "2026-02-14 13:29:15,658", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:29:15,658", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "AlXDziJoGFWTibrsxuMePJG"}}"}
+{"timestamp": "2026-02-14 13:29:19,745", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=16"}
+{"timestamp": "2026-02-14 13:29:19,750", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:29:19,750", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:29:21,525", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:29:21,525", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:29:21,526", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********6252 with params: ['huzaifa', '14 February 2026', 'Fajar Takbira']"}
+{"timestamp": "2026-02-14 13:29:21,765", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:29:21,766", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "A9fHqaL5QethUXKLQCUOVJ4"}}"}
+{"timestamp": "2026-02-14 13:29:23,128", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=17"}
+{"timestamp": "2026-02-14 13:29:23,134", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:29:23,135", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:29:24,842", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:29:24,843", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:29:24,843", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********6252 with params: ['huzaifa', '14 February 2026', 'Zohar Azaan']"}
+{"timestamp": "2026-02-14 13:29:25,453", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:29:25,453", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "ATtMbGi6ocaWm8htlGuxGUa"}}"}
+{"timestamp": "2026-02-14 13:29:54,109", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=45"}
+{"timestamp": "2026-02-14 13:29:54,114", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:29:54,114", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:29:55,885", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:29:55,886", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 45"}
+{"timestamp": "2026-02-14 13:29:55,886", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:29:55,887", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********6252 with params: ['huzaifa']"}
+{"timestamp": "2026-02-14 13:29:56,145", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:29:56,145", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "Ac9BQRCkrBMApmj_7p8By2I"}}"}
+{"timestamp": "2026-02-14 13:30:02,904", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-14 13:30:03,167", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 46 (mukarram). Will schedule tasks after commit."}
+{"timestamp": "2026-02-14 13:30:03,174", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 46"}
+{"timestamp": "2026-02-14 13:30:03,180", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.2717s"}
+{"timestamp": "2026-02-14 13:30:03,211", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 46"}
+{"timestamp": "2026-02-14 13:30:03,233", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 46"}
+{"timestamp": "2026-02-14 13:30:03,344", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=46"}
+{"timestamp": "2026-02-14 13:30:03,342", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 13:30:03,356", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:30:03,357", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:30:03,395", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 13:30:03,398", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 60451865"}
+{"timestamp": "2026-02-14 13:30:04,046", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-14 13:30:04,694", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-14 13:30:04,695", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-14 13:30:04,715", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='', starts_with_equals=False, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-14 13:30:04,716", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-14 13:30:05,176", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 60451865 appended."}
+{"timestamp": "2026-02-14 13:30:05,203", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:30:05,204", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 46"}
+{"timestamp": "2026-02-14 13:30:05,204", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 13:30:05,204", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['mukarram']"}
+{"timestamp": "2026-02-14 13:30:05,485", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:30:05,486", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "A3BrQg8OPQty3X7Ldl0eplO"}}"}
+{"timestamp": "2026-02-14 13:30:07,946", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-14 13:30:07,970", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.0241s"}
+{"timestamp": "2026-02-14 13:30:15,662", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=15"}
+{"timestamp": "2026-02-14 13:30:15,666", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:30:15,666", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:30:16,462", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-14 13:30:16,483", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.0206s"}
+{"timestamp": "2026-02-14 13:30:17,510", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:30:17,512", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 13:30:17,512", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********9787 with params: ['Mukarram', '01 March 2026', 'Fajar Azaan']"}
+{"timestamp": "2026-02-14 13:30:17,761", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:30:17,761", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "Afcvg5WsbnNcYm8iSbgxCqn"}}"}
+{"timestamp": "2026-02-14 13:30:21,769", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=16"}
+{"timestamp": "2026-02-14 13:30:21,775", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:30:21,775", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:30:23,525", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:30:23,526", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:30:23,526", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********6252 with params: ['huzaifa', '14 February 2026', 'Fajar Takbira']"}
+{"timestamp": "2026-02-14 13:30:23,808", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:30:23,808", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "AH1WVNoQE0Abptecs9Ml4bM"}}"}
+{"timestamp": "2026-02-14 13:30:25,459", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=17"}
+{"timestamp": "2026-02-14 13:30:25,467", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:30:25,467", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:30:27,288", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:30:27,288", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:30:27,288", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********6252 with params: ['huzaifa', '14 February 2026', 'Zohar Azaan']"}
+{"timestamp": "2026-02-14 13:30:28,078", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:30:28,078", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "AGbTJPxaV52aAz-sjgF7_mw"}}"}
+{"timestamp": "2026-02-14 13:30:42,676", "level": "INFO", "module": "views", "message": "API: Registration create request received"}
+{"timestamp": "2026-02-14 13:30:42,746", "level": "INFO", "module": "signals", "message": "[Signal] registration_post_save: New registration 47 (mukarram). Will schedule tasks after commit."}
+{"timestamp": "2026-02-14 13:30:42,747", "level": "INFO", "module": "signals", "message": "[Signal] on_commit callback registered for registration 47"}
+{"timestamp": "2026-02-14 13:30:42,767", "level": "INFO", "module": "views", "message": "Saved 2 user uploaded files synchronously."}
+{"timestamp": "2026-02-14 13:30:42,767", "level": "INFO", "module": "views", "message": "New registration created: mukarram (60451862)"}
+{"timestamp": "2026-02-14 13:30:42,771", "level": "INFO", "module": "views", "message": "API: Registration create finished in 0.0956s"}
+{"timestamp": "2026-02-14 13:30:42,775", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing notifications for registration 47"}
+{"timestamp": "2026-02-14 13:30:42,776", "level": "INFO", "module": "signals", "message": "[OnCommit] Enqueueing sync_to_sheets_task for registration 47"}
+{"timestamp": "2026-02-14 13:30:42,803", "level": "INFO", "module": "__init__", "message": "Task send_registration_confirmation_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 13:30:42,805", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=47"}
+{"timestamp": "2026-02-14 13:30:42,806", "level": "INFO", "module": "__init__", "message": "Task sync_to_sheets_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 13:30:42,811", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:30:42,811", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:30:42,813", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Triggered for ITS: 60451862"}
+{"timestamp": "2026-02-14 13:30:43,079", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Checking headers in Registration_Summary!A1:H1"}
+{"timestamp": "2026-02-14 13:30:43,748", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Current Row 1 values: [['Full Name', 'ITS Number', 'Email', 'Contact', 'Preference', 'Registered At', 'Media File', 'Status']]"}
+{"timestamp": "2026-02-14 13:30:43,749", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [ensure_headers] Headers already present. Skipping write."}
+{"timestamp": "2026-02-14 13:30:43,758", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: Constructed HYPERLINK for 60451862: =HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/audio/60451862_mukarram_takhbira_takhbira.mp3", "60451862_mukarram_takhbira_takhbira.mp3")"}
+{"timestamp": "2026-02-14 13:30:43,758", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: SingleSync media_cell='=HYPERLINK("https://api.madrasjamaatportal.org/media/auditions%20files/audio/60451862_mukarram_takhbira_takhbira.mp3", "60451862_mukarram_takhbira_takhbira.mp3")', starts_with_equals=True, input_mode=USER_ENTERED"}
+{"timestamp": "2026-02-14 13:30:43,758", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG: [SingleSync] Appending data to Registration_Summary!A2 via USER_ENTERED"}
+{"timestamp": "2026-02-14 13:30:44,324", "level": "ERROR", "module": "google_sheets", "message": "GSYNC-DIAG SUCCESS: [SingleSync] Record 60451862 appended."}
+{"timestamp": "2026-02-14 13:30:44,526", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:30:44,527", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 47"}
+{"timestamp": "2026-02-14 13:30:44,527", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 13:30:44,527", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['mukarram']"}
+{"timestamp": "2026-02-14 13:30:44,803", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:30:44,804", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "AJHTAYeWfi50xCAcSkG6uUG"}}"}
+{"timestamp": "2026-02-14 13:31:05,514", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=46"}
+{"timestamp": "2026-02-14 13:31:05,530", "level": "ERROR", "module": "tasks", "message": "[Task] send_registration_confirmation: Registration 46 not found. Aborting."}
+{"timestamp": "2026-02-14 13:31:17,766", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=15"}
+{"timestamp": "2026-02-14 13:31:17,771", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:31:17,772", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:31:19,669", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukbambot118@gmail.com"}
+{"timestamp": "2026-02-14 13:31:19,669", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 13:31:19,670", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********9787 with params: ['Mukarram', '01 March 2026', 'Fajar Azaan']"}
+{"timestamp": "2026-02-14 13:31:19,928", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:31:19,928", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "AJtYX81X2S59Uu7oyEO8Gjh"}}"}
+{"timestamp": "2026-02-14 13:31:19,929", "level": "ERROR", "module": "tasks", "message": "Task fatal error: WhatsApp failed: {'message': 'API access blocked.', 'type': 'OAuthException', 'code': 200, 'fbtrace_id': 'AJtYX81X2S59Uu7oyEO8Gjh'}"}
+{"timestamp": "2026-02-14 13:31:23,813", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=16"}
+{"timestamp": "2026-02-14 13:31:23,817", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:31:23,817", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:31:25,558", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:31:25,559", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:31:25,560", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********6252 with params: ['huzaifa', '14 February 2026', 'Fajar Takbira']"}
+{"timestamp": "2026-02-14 13:31:25,806", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:31:25,806", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "AxBgUfZ0dafHGzxCBO6qHn_"}}"}
+{"timestamp": "2026-02-14 13:31:25,808", "level": "ERROR", "module": "tasks", "message": "Task fatal error: WhatsApp failed: {'message': 'API access blocked.', 'type': 'OAuthException', 'code': 200, 'fbtrace_id': 'AxBgUfZ0dafHGzxCBO6qHn_'}"}
+{"timestamp": "2026-02-14 13:31:28,081", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Starting for duty_assignment_id=17"}
+{"timestamp": "2026-02-14 13:31:28,086", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending allotment email to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:31:28,087", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Duty Allotment Confirmed – Madras Jamaat Portal' to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:31:29,768", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to bhftech.info@gmail.com"}
+{"timestamp": "2026-02-14 13:31:29,769", "level": "INFO", "module": "tasks", "message": "[Task] send_duty_allotment_notification: Sending WhatsApp to 919677296252"}
+{"timestamp": "2026-02-14 13:31:29,769", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'duty_allotment_confirmed' to ********6252 with params: ['huzaifa', '14 February 2026', 'Zohar Azaan']"}
+{"timestamp": "2026-02-14 13:31:30,008", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:31:30,008", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "ADBZm_jun2wHDbLKXX5Zz8b"}}"}
+{"timestamp": "2026-02-14 13:31:30,010", "level": "ERROR", "module": "tasks", "message": "Task fatal error: WhatsApp failed: {'message': 'API access blocked.', 'type': 'OAuthException', 'code': 200, 'fbtrace_id': 'ADBZm_jun2wHDbLKXX5Zz8b'}"}
+{"timestamp": "2026-02-14 13:31:44,818", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=47"}
+{"timestamp": "2026-02-14 13:31:44,822", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:31:44,822", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:31:46,540", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:31:46,540", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 47"}
+{"timestamp": "2026-02-14 13:31:46,540", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 13:31:46,541", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['mukarram']"}
+{"timestamp": "2026-02-14 13:31:46,783", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:31:46,784", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "AN6yp6BmN9eXtZ935IoEt9k"}}"}
+{"timestamp": "2026-02-14 13:32:46,797", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=47"}
+{"timestamp": "2026-02-14 13:32:46,812", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:32:46,812", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:32:48,699", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:32:48,700", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 47"}
+{"timestamp": "2026-02-14 13:32:48,700", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 13:32:48,700", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['mukarram']"}
+{"timestamp": "2026-02-14 13:32:48,949", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:32:48,950", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "AXpc7jjTkhUiG8yzyQrtVda"}}"}
+{"timestamp": "2026-02-14 13:33:48,974", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Starting for registration_id=47"}
+{"timestamp": "2026-02-14 13:33:48,984", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending confirmation email to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:33:48,984", "level": "INFO", "module": "email_notifications", "message": "[Email] Sending 'Registration Received – Madras Jamaat Portal' to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:33:50,742", "level": "INFO", "module": "email_notifications", "message": "[Email] ✓ SUCCESS to mukarrambambot786@gmail.com"}
+{"timestamp": "2026-02-14 13:33:50,742", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Email attempted for 47"}
+{"timestamp": "2026-02-14 13:33:50,743", "level": "INFO", "module": "tasks", "message": "[Task] send_registration_confirmation: Sending WhatsApp to 918925769787"}
+{"timestamp": "2026-02-14 13:33:50,743", "level": "INFO", "module": "whatsapp", "message": "[WhatsApp] Sending 'registration_received' to ********9787 with params: ['mukarram']"}
+{"timestamp": "2026-02-14 13:33:50,982", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] ❌ API Error: 400 | Code: 200 | Msg: API access blocked."}
+{"timestamp": "2026-02-14 13:33:50,983", "level": "ERROR", "module": "whatsapp", "message": "[WhatsApp] Full Response: {"error": {"message": "API access blocked.", "type": "OAuthException", "code": 200, "fbtrace_id": "A8WPSxWU69DnKhaaTOKbo_W"}}"}
+{"timestamp": "2026-02-14 13:36:40,031", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 13:36:48,527", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 13:44:10,807", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 13:52:43,002", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 13:52:59,410", "level": "INFO", "module": "__init__", "message": "Task notify_admin_reallocation_request_task enqueued to Celery successfully."}
+{"timestamp": "2026-02-14 13:52:59,418", "level": "INFO", "module": "tasks", "message": "[Task] notify_admin_reallocation_request: Starting for duty_assignment_id=14"}
+{"timestamp": "2026-02-14 13:52:59,445", "level": "ERROR", "module": "tasks", "message": "[Task] notify_admin_reallocation_request: ADMIN_WHATSAPP_NUMBER not configured in settings."}
+{"timestamp": "2026-02-14 13:53:08,270", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
+{"timestamp": "2026-02-14 14:19:00,409", "level": "INFO", "module": "views", "message": "API: Search initiated for ITS 60451866"}
