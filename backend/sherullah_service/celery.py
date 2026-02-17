@@ -38,6 +38,15 @@ app.conf.beat_schedule = {
             'expires': 3600,
         }
     },
+
+    # Process voice reminders every 5 minutes
+    'process-voice-reminders-every-5-min': {
+        'task': 'registrations.process_due_reminder_calls',
+        'schedule': crontab(minute='*/5'),
+        'options': {
+            'expires': 200,
+        }
+    },
 }
 
 # Celery Configuration

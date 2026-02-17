@@ -41,6 +41,10 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
+# Upload Limits (100MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
+
 
 
 # Application definition

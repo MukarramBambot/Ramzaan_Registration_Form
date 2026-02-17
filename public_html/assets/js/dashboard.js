@@ -3,6 +3,10 @@
  */
 
 const DUTY_COLUMNS = [
+    { key: 'SANAH', label: 'Sanah' },
+    { key: 'TAJWEED', label: 'Tajwid' },
+    { key: 'DUA_E_JOSHAN', label: 'Dua e Joshan' },
+    { key: 'YASEEN', label: 'Yaseen' },
     { key: 'FAJAR_AZAAN', label: 'Fajar Azaan' },
     { key: 'FAJAR_TAKBIRA', label: 'Fajar Takbira' },
     { key: 'ZOHAR_AZAAN', label: 'Zohar Azaan' },
@@ -48,13 +52,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function generateRamazaanDates() {
         const d = [];
-        const start = new Date('2026-02-14');
-        for (let i = 0; i < 30; i++) {
-            const current = new Date(start);
-            current.setDate(start.getDate() + i);
-            const day = String(current.getDate()).padStart(2, '0');
-            const month = String(current.getMonth() + 1).padStart(2, '0');
-            const year = current.getFullYear();
+        const start = new Date('2026-02-17');
+        const end = new Date('2026-03-18');
+        
+        for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+            const day = String(dt.getDate()).padStart(2, '0');
+            const month = String(dt.getMonth() + 1).padStart(2, '0');
+            const year = dt.getFullYear();
             d.push(`${day}/${month}/${year}`);
         }
         return d;

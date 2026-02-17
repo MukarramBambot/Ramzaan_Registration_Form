@@ -3,6 +3,7 @@ from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 import os
 import re
+import uuid
 
 class Registration(models.Model):
     """
@@ -12,7 +13,7 @@ class Registration(models.Model):
         ('AZAAN', 'Azaan'),
         ('TAKHBIRA', 'Takhbira'),
         ('SANAH', 'Sanah'),
-        ('TILAWAT', 'Tajweed Quran Masjid Tilawat'),
+        ('TILAWAT', 'Tajwid Quran Majid Tilawat'),
         ('JOSHAN', 'Dua e Joshan'),
         ('YASEEN', 'Yaseen'),
         ('BOTH', 'Both'),
@@ -98,6 +99,7 @@ class AuditionFile(models.Model):
     )
     audition_file_type = models.CharField(max_length=10, choices=FILE_TYPES, default='audio')
     audition_display_name = models.CharField(max_length=255, default='')
+    is_selected = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -116,6 +118,10 @@ class AuditionFile(models.Model):
 
 class DutyAssignment(models.Model):
     NAMAAZ_CHOICES = [
+        ('SANAH', 'Sanah'),
+        ('TAJWEED', 'Tajwid Quran Majid Tilawat'),
+        ('DUA_E_JOSHAN', 'Dua e Joshan'),
+        ('YASEEN', 'Yaseen'),
         ('FAJAR_AZAAN', 'Fajar Azaan'),
         ('FAJAR_TAKBIRA', 'Fajar Takbira'),
         ('ZOHAR_AZAAN', 'Zohar Azaan'),
@@ -245,3 +251,37 @@ class AssignmentRequestLog(models.Model):
         on_delete=models.CASCADE,
         related_name='request_logs'
     )
+
+class RegistrationCorrection(models.Model):
+    """
+    Tracks correction requests from Admins to Users.
+    No data is deleted; users are given a token to update specific fields.
+    """
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('RESOLVED', 'Resolved'),
+    ]
+
+    registration = models.ForeignKey(Registration, on_delete=models.CASCADE, related_name='corrections')
+    field_name = models.CharField(max_length=100, help_text="Field needing correction (e.g., 'full_name', 'audition_files')")
+    admin_message = models.TextField(help_text="Message from admin explaining what to fix")
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+class DutyReminderCall(models.Model):
+    registration = models.ForeignKey(Registration, on_delete=models.CASCADE)
+    duty_assignment = models.ForeignKey(DutyAssignment, on_delete=models.CASCADE, related_name='voice_reminders', null=True)
+    scheduled_time = models.DateTimeField()
+    call_status = models.CharField(max_length=50, default="PENDING")
+    exotel_call_sid = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('registration', 'scheduled_time')
+
+    def __str__(self):
+        return f"Call for {self.registration.its_number} at {self.scheduled_time}"
+

@@ -1,5 +1,30 @@
 <?php include 'includes/header.php'; ?>
 
+<style>
+.progress-wrapper {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+#progressBar {
+    width: 0%;
+    height: 100%;
+    background: #2563eb;
+    transition: width 0.2s ease;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #374151;
+}
+</style>
+
 <!-- Content Wrapper -->
 <div id="registration-page" class="min-h-screen bg-[#F9F7F7]">
     <!-- 1) Header Section -->
@@ -172,8 +197,8 @@
                                 <span class="ml-3 text-[#112D4E]">Sanah</span>
                             </label>
                             <label class="flex items-center p-4 border border-[#DBE2EF] rounded hover:bg-[#F9FAFB] cursor-pointer transition-colors">
-                                <input type="checkbox" name="preference" value="Tajweed Quran Tilawat" class="w-5 h-5 text-[#3F72AF] border-gray-300 focus:ring-[#3F72AF]">
-                                <span class="ml-3 text-[#112D4E]">Tajweed Quran Masjid Tilawat</span>
+                                <input type="checkbox" name="preference" value="Tajwid Quran Tilawat" class="w-5 h-5 text-[#3F72AF] border-gray-300 focus:ring-[#3F72AF]">
+                                <span class="ml-3 text-[#112D4E]">Tajwid Quran Majid Tilawat</span>
                             </label>
                             <label class="flex items-center p-4 border border-[#DBE2EF] rounded hover:bg-[#F9FAFB] cursor-pointer transition-colors">
                                 <input type="checkbox" name="preference" value="Dua e Joshan" class="w-5 h-5 text-[#3F72AF] border-gray-300 focus:ring-[#3F72AF]">
@@ -205,6 +230,19 @@
 
                         <div id="file-list" class="grid grid-cols-1 gap-2 mt-2">
                             <!-- JS will populate files here -->
+                        </div>
+                    </div>
+
+                    <!-- Upload Progress -->
+                    <div id="uploadProgressContainer" style="display:none;">
+                        <div class="progress-wrapper">
+                            <div id="progressBar"></div>
+                        </div>
+
+                        <div class="progress-stats">
+                            <span id="progressPercent">0%</span>
+                            <span id="uploadSpeed">0 KB/s</span>
+                            <span id="timeRemaining">0s remaining</span>
                         </div>
                     </div>
 

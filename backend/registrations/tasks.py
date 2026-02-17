@@ -225,3 +225,222 @@ def send_duty_allotment_notification_task(self, duty_assignment_id):
             raise self.retry(exc=exc, countdown=60)
     
     logger.info(f"[Task] send_duty_allotment_notification: Completed for duty_assignment_id={duty_assignment_id}")
+
+
+@shared_task(
+    name='registrations.send_correction_notification',
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60
+)
+def send_correction_notification_task(self, correction_id):
+    """
+    Send WhatsApp + Email notification when a correction is requested.
+    """
+    from .models import RegistrationCorrection
+    from .utils.whatsapp import send_correction_notification
+    from .utils.email_notifications import send_correction_email
+
+    logger.info(f"[Task] send_correction_notification: Starting for correction_id={correction_id}")
+    
+    try:
+        correction = RegistrationCorrection.objects.select_related('registration').get(id=correction_id)
+    except RegistrationCorrection.DoesNotExist:
+        logger.error(f"[Task] send_correction_notification: Correction {correction_id} not found.")
+        return
+
+    try:
+        # 1. Email notification (Independent)
+        try:
+            logger.info(f"[Task] send_correction_notification: Sending email for {correction_id}")
+            send_correction_email(correction)
+        except Exception as e:
+            logger.error(f"[Task] send_correction_notification: Email failed: {str(e)}")
+
+        # 2. WhatsApp notification
+        logger.info(f"[Task] send_correction_notification: Sending WhatsApp for {correction_id}")
+        result = send_correction_notification(correction)
+        
+        if result.get('success'):
+            logger.info(f"[Task] send_correction_notification: ✓ WhatsApp sent for {correction_id}")
+        else:
+            error_msg = result.get('response', {}).get('error', 'Unknown WhatsApp error')
+            logger.error(f"[Task] send_correction_notification: ❌ WhatsApp failed: {error_msg}")
+            if hasattr(self, 'retry'):
+                raise self.retry(exc=Exception(error_msg), countdown=60)
+
+    except Exception as exc:
+        if 'Retry' in str(type(exc)): raise
+        logger.error(f"Task fatal error: {str(exc)}")
+        if hasattr(self, 'retry'):
+            raise self.retry(exc=exc, countdown=60)
+
+@shared_task(
+    name='registrations.send_correction_completed_notification',
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60
+)
+def send_correction_completed_notification_task(self, registration_id):
+    """
+    Send WhatsApp + Email notification when a correction is resolved.
+    """
+    from .models import Registration
+    from .utils.whatsapp import send_correction_done_v1
+    from .utils.email_notifications import send_correction_completed_email
+
+    logger.info(f"[Task] send_correction_completed_notification: Starting for registration_id={registration_id}")
+    
+    try:
+        registration = Registration.objects.get(id=registration_id)
+    except Registration.DoesNotExist:
+        logger.error(f"[Task] send_correction_completed_notification: Registration {registration_id} not found.")
+        return
+
+    try:
+        # 1. Email notification (Independent)
+        try:
+            logger.info(f"[Task] send_correction_completed_notification: Sending email for {registration_id}")
+            send_correction_completed_email(registration)
+        except Exception as e:
+            logger.error(f"[Task] send_correction_completed_notification: Email failed: {str(e)}")
+
+        # 2. WhatsApp notification (New template correction_done_v1)
+        logger.info(f"[Task] send_correction_completed_notification: Sending WhatsApp for {registration_id}")
+        result = send_correction_done_v1(
+            phone=registration.phone_number,
+            full_name=registration.full_name
+        )
+        
+        if result.get('success'):
+            logger.info(f"[Task] send_correction_completed_notification: ✓ WhatsApp sent for {registration_id}")
+        else:
+            # We don't retry if it's a template missing error (likely in production before Meta approval)
+            error_data = result.get('response', {}).get('error', {})
+            error_msg = error_data.get('message', 'Unknown WhatsApp error')
+            logger.error(f"[Task] send_correction_completed_notification: ❌ WhatsApp failed: {error_msg}")
+    except Exception as exc:
+        logger.error(f"[Task] send_correction_completed_notification: Unexpected error: {str(exc)}")
+
+# Voice reminder system isolated from core registration logic.
+# Failure here must never affect registration or allotment.
+
+@shared_task(name='registrations.schedule_voice_reminder')
+def schedule_voice_reminder_task(duty_assignment_id):
+    """
+    Calculates reporting time and schedules a DutyReminderCall 2 hours before.
+    Isolated from core flow. No block on failure.
+    """
+    from .models import DutyAssignment, DutyReminderCall
+    from .utils.reporting import get_reporting_time
+    from datetime import datetime, timedelta
+    import pytz
+
+    try:
+        assignment = DutyAssignment.objects.select_related('assigned_user').get(id=duty_assignment_id)
+        
+        # 1. Safety check: Check if PENDING reminder already exists for this duty
+        existing = DutyReminderCall.objects.filter(
+            duty_assignment=assignment,
+            call_status='PENDING'
+        ).first()
+        
+        if existing:
+            logger.info(f"[VoiceTask] Pending reminder already exists for duty {duty_assignment_id}. Skipping.")
+            return
+
+        reporting_time_str = get_reporting_time(assignment)
+        if not reporting_time_str:
+            logger.warning(f"[VoiceTask] No reporting time rule for assignment {duty_assignment_id}")
+            return
+
+        # Timezone Logic Implementation
+        ist = pytz.timezone('Asia/Kolkata')
+        time_obj = datetime.strptime(reporting_time_str, "%I:%M %p").time()
+        
+        naive_dt = datetime.combine(assignment.duty_date, time_obj)
+        aware_dt_ist = ist.localize(naive_dt)
+        
+        # Subtract 2 hours
+        scheduled_time_ist = aware_dt_ist - timedelta(hours=2)
+        scheduled_time_utc = scheduled_time_ist.astimezone(pytz.UTC)
+        
+        # Debug Logs (Requirement 1)
+        logger.info(f"[VoiceTask] Timezone Validation for duty {duty_assignment_id}:")
+        logger.info(f"  Reporting Time IST: {aware_dt_ist}")
+        logger.info(f"  Scheduled Time IST: {scheduled_time_ist}")
+        logger.info(f"  Scheduled Time UTC: {scheduled_time_utc}")
+        logger.info(f"  Current UTC: {timezone.now()}")
+
+        # Create record (Requirement 2: Duplicate protection)
+        reminder, created = DutyReminderCall.objects.get_or_create(
+            registration=assignment.assigned_user,
+            duty_assignment=assignment,
+            scheduled_time=scheduled_time_utc,
+            defaults={'call_status': 'PENDING'}
+        )
+        
+        if created:
+            logger.info(f"[VoiceTask] Scheduled new call for {assignment.assigned_user.its_number} at {scheduled_time_utc}")
+        else:
+            logger.info(f"[VoiceTask] Voice reminder already exists for {assignment.assigned_user.its_number} at {scheduled_time_utc}")
+
+    except DutyAssignment.DoesNotExist:
+        logger.error(f"[VoiceTask] DutyAssignment {duty_assignment_id} not found")
+    except Exception as e:
+        logger.error(f"[VoiceTask] [Isolated] Failed to schedule voice reminder: {str(e)}")
+
+
+@shared_task(name='registrations.process_due_reminder_calls')
+def process_due_reminder_calls_task():
+    """
+    Periodic task to trigger due voice calls.
+    Uses select_for_update() and transaction.atomic() for race condition safety.
+    """
+    from .models import DutyReminderCall
+    from .utils.exotel import make_exotel_call
+    from .utils.reporting import get_reporting_time
+    from django.db import transaction
+    
+    now = timezone.now()
+    
+    try:
+        with transaction.atomic():
+            # select_for_update() prevents other workers from picking the same row
+            due_calls = DutyReminderCall.objects.select_for_update(skip_locked=True).filter(
+                call_status='PENDING',
+                scheduled_time__lte=now
+            ).select_related('registration', 'duty_assignment')
+
+            if not due_calls.exists():
+                return
+            
+            logger.info(f"[VoiceTask] Processing {due_calls.count()} due voice reminders")
+            
+            for call in due_calls:
+                try:
+                    reporting_time = get_reporting_time(call.duty_assignment)
+                    
+                    # Log attempt
+                    logger.info(f"[VoiceTask] [Worker] Calling Exotel for CallID: {call.id}")
+                    
+                    result = make_exotel_call(call.registration, call.duty_assignment, reporting_time)
+                    
+                    if result.get('success'):
+                        call.call_status = 'SENT'
+                        call.exotel_call_sid = result.get('call_sid')
+                        logger.info(f"[VoiceTask] Call SUCCESS: {call.exotel_call_sid}")
+                    else:
+                        call.call_status = 'FAILED'
+                        error_msg = result.get('error')
+                        logger.error(f"[VoiceTask] Call FAILED for {call.id}: {error_msg}")
+                    
+                    call.save()
+                    
+                except Exception as e:
+                    logger.error(f"[VoiceTask] Error in loop for call {call.id}: {str(e)}")
+                    call.call_status = 'FAILED'
+                    call.save()
+                    
+    except Exception as exc:
+        logger.error(f"[VoiceTask] [Fatal] Periodic task failed: {str(exc)}")

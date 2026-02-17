@@ -242,16 +242,127 @@
                     ${new Date(reg.created_at).toLocaleDateString('en-GB')}
                 </td>
                 <td class="px-6 py-4 text-right">
-                    <button 
-                        onclick='viewAuditions(${JSON.stringify(reg.id)}, ${JSON.stringify(reg.audition_files)})'
-                        class="px-3 py-1.5 rounded bg-white border border-[#DBE2EF] text-[#3F72AF] text-xs font-bold hover:bg-[#3F72AF] hover:text-white hover:border-[#3F72AF] transition-all flex items-center gap-1.5 ml-auto"
-                    >
-                        ${ICONS.eye.replace('<svg', '<svg class="w-3.5 h-3.5"')}
-                        Auditions (${reg.audition_files.length})
-                    </button>
+                    <div class="flex flex-col gap-2 items-end">
+                        <button 
+                            onclick='viewAuditions(${JSON.stringify(reg.id)})'
+                            class="px-3 py-1.5 rounded bg-white border border-[#DBE2EF] text-[#3F72AF] text-xs font-bold hover:bg-[#3F72AF] hover:text-white hover:border-[#3F72AF] transition-all flex items-center gap-1.5 ml-auto w-full justify-center"
+                        >
+                            ${ICONS.eye.replace('<svg', '<svg class="w-3.5 h-3.5"')}
+                            Auditions (${reg.audition_files.length})
+                        </button>
+                        <button 
+                            onclick='requestCorrection(${JSON.stringify(reg.id)}, "${reg.full_name}")'
+                            class="px-3 py-1.5 rounded bg-white border border-amber-200 text-amber-600 text-xs font-bold hover:bg-amber-50 hover:border-amber-300 transition-all flex items-center gap-1.5 ml-auto w-full justify-center"
+                        >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            Correction
+                        </button>
+                    </div>
                 </td>
             </tr>
         `).join('');
+    }
+
+    // ... existing helpers ...
+
+    function requestCorrection(regId, fullName) {
+        const modalHTML = `
+            <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-fadeIn" id="correction-modal">
+                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeCorrectionModal()"></div>
+                
+                <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col animate-zoomIn">
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 rounded-t-2xl">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Request Correction</h3>
+                            <p class="text-sm text-gray-500">For ${fullName}</p>
+                        </div>
+                        <button onclick="closeCorrectionModal()" class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200/50 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Field to Correct</label>
+                            <select id="correction-field" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2 border">
+                                <option value="audition_files">Audition Files (Re-upload)</option>
+                                <option value="full_name">Full Name</option>
+                                <option value="its_number">ITS Number</option>
+                                <option value="phone_number">Phone Number</option>
+                                <option value="email">Email Address</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Message for User</label>
+                            <textarea id="correction-msg" rows="3" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2 border" placeholder="e.g., Please upload a clearer audio file of Azaan."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-4 border-t border-gray-100 flex justify-end bg-white rounded-b-2xl gap-3">
+                        <button onclick="closeCorrectionModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium text-sm transition-all">
+                            Cancel
+                        </button>
+                        <button onclick="submitCorrection(${regId})" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm shadow-lg shadow-indigo-200 transition-all">
+                            Send Request
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const container = document.createElement('div');
+        container.id = 'correction-modal-wrapper';
+        container.innerHTML = modalHTML;
+        document.body.appendChild(container);
+    }
+
+    function closeCorrectionModal() {
+        const el = document.getElementById('correction-modal-wrapper');
+        if (el) el.remove();
+        
+    }
+
+    async function submitCorrection(regId) {
+        const field = document.getElementById('correction-field').value;
+        const msg = document.getElementById('correction-msg').value;
+        
+        if (!msg.trim()) {
+            alert("Please enter a message for the user.");
+            return;
+        }
+
+        const btn = document.querySelector('#correction-modal button.bg-indigo-600');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Sending...';
+        btn.disabled = true;
+
+        try {
+            const response = await apiFetch('/api/corrections/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    registration: regId,
+                    field_name: field,
+                    admin_message: msg
+                }),
+                requireAuth: true
+            });
+
+            if (!response.ok) throw new Error((await response.json()).error || 'Failed to send request');
+            
+            closeCorrectionModal();
+            showDialog({
+                variant: 'success',
+                title: 'Request Sent',
+                message: 'Correction link has been generated (Notification pending integration).',
+                confirmLabel: 'OK'
+            });
+
+        } catch (e) {
+            alert(e.message);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     }
 
     function getPreferenceClass(pref) {
@@ -261,7 +372,7 @@
             if (pref.includes('Azaan')) return 'bg-blue-100 text-blue-700';
             if (pref.includes('Takhbira')) return 'bg-indigo-100 text-indigo-700';
             if (pref.includes('Sanah')) return 'bg-teal-100 text-teal-700';
-            if (pref.includes('Tajweed Quran Tilawat')) return 'bg-yellow-100 text-yellow-700';
+            if (pref.includes('Tajwid Quran Tilawat') || pref.includes('Tajweed Quran Tilawat')) return 'bg-yellow-100 text-yellow-700';
             if (pref.includes('Dua e Joshan')) return 'bg-rose-100 text-rose-700';
             if (pref.includes('Yaseen')) return 'bg-gray-100 text-gray-700';
             return 'bg-gray-100 text-gray-700';
@@ -287,7 +398,18 @@
         }
     }
 
-    function viewAuditions(regId, files) {
+    async function viewAuditions(regId) {
+        // 1. Fetch fresh data
+        let files = [];
+        try {
+            const response = await apiFetch(`/api/registrations/${regId}/auditions/`, { requireAuth: true });
+            if (!response.ok) throw new Error('Failed to fetch auditions');
+            files = await response.json();
+        } catch (e) {
+            showDialog({ title: 'Error', message: e.message, variant: 'danger' });
+            return;
+        }
+
         if (!files || files.length === 0) {
             showDialog({
                 title: 'No Files',
@@ -297,21 +419,123 @@
             return;
         }
 
-        // Just open the first file for now, or we could extend the modal to handle a list
-        // However audition-modal.js openAuditionModal takes a single file object: { url, name, type }
-        // Let's open the first one and show a choice if multiple (or just use the first for now to keep it simple as a starting point)
-        const file = {
-            url: files[0].audition_file_path || files[0].url,
-            name: files[0].audition_display_name || files[0].name || 'Audition 1',
-            type: files[0].audition_file_type || files[0].type || 'audio'
+        // 2. Build Modal Content
+        const container = document.getElementById('audition-modal-container');
+        
+        const renderFileList = () => {
+            return files.map(file => {
+                const isSelected = file.is_selected;
+                const borderClass = isSelected ? 'border-green-500 ring-4 ring-green-500/20 bg-green-50' : 'border-gray-200';
+                const btnClass = isSelected 
+                    ? 'bg-green-600 text-white cursor-default' 
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50';
+                const btnText = isSelected ? 'Selected' : 'Select';
+                
+                // Fix URL
+                let url = file.audition_file_path;
+                if (url && !url.startsWith('http')) {
+                    url = window.API_BASE + (url.startsWith('/') ? '' : '/') + url;
+                }
+
+                return `
+                    <div class="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border-2 ${borderClass} transition-all mb-4 bg-white shadow-sm relative overflow-hidden">
+                        ${isSelected ? '<div class="absolute top-0 right-0 bg-green-500 text-white text-[10px] px-2 py-1 uppercase font-bold tracking-wider rounded-bl-lg">Approved</div>' : ''}
+                        
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-gray-900 truncate" title="${file.audition_display_name}">${file.audition_display_name}</h4>
+                            <p class="text-xs text-gray-500 mt-1 mb-3">Uploaded: ${new Date(file.uploaded_at).toLocaleString()}</p>
+                            
+                            <audio controls class="w-full h-10" preload="metadata">
+                                <source src="${url}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+
+                        <!--
+                        <div class="flex items-center sm:self-center pt-2 sm:pt-0">
+                            <button 
+                                onclick="selectAudition(${file.id}, ${regId})"
+                                class="px-4 py-2 rounded-lg text-sm font-bold transition-all w-full sm:w-auto ${btnClass}"
+                                ${isSelected ? 'disabled' : ''}
+                            >
+                                ${isSelected 
+                                    ? `<span class="flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Selected</span>` 
+                                    : 'Select as Final'}
+                            </button>
+                        </div>
+                        -->
+                    </div>
+                `;
+            }).join('');
         };
 
-        // Fix URL if it's relative
-        if (file.url && !file.url.startsWith('http')) {
-            file.url = window.API_BASE + (file.url.startsWith('/') ? '' : '/') + file.url;
-        }
+        const modalHTML = `
+            <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeAuditionModal()"></div>
+                
+                <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-zoomIn">
+                    <!-- Header -->
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 rounded-t-2xl">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Audition Files</h3>
+                            <p class="text-sm text-gray-500">Select one file for the final approved audition.</p>
+                        </div>
+                        <button onclick="closeAuditionModal()" class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200/50 transition-all">
+                            ${ICONS.x || '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'}
+                        </button>
+                    </div>
 
-        openAuditionModal(file);
+                    <!-- List -->
+                    <div class="p-6 overflow-y-auto bg-gray-50 custom-scrollbar" id="audition-list-container">
+                        ${renderFileList()}
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="px-6 py-4 border-t border-gray-100 flex justify-end bg-white rounded-b-2xl">
+                        <button onclick="closeAuditionModal()" class="px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium text-sm shadow-lg shadow-gray-200 transition-all">
+                            Done
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = modalHTML;
+        document.body.style.overflow = 'hidden';
+
+        // 3. Define Select Handler Helper
+        window.selectAudition = async (fileId, regId) => {
+            if (!confirm('Are you sure you want to select this audition? This will unselect any other files for this user.')) return;
+
+            // Show loading overlay or modify button state (simplified here)
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = 'Saving...';
+
+            try {
+                const response = await apiFetch(`/api/audition-files/${fileId}/select_audition/`, {
+                    method: 'PATCH',
+                    requireAuth: true
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to select audition');
+                }
+
+                // Refresh the modal content
+                viewAuditions(regId); // Recursively reload to show updated state
+                
+                // Optional: Refresh background table row if needed, but not strictly required by prompt constraints on stability.
+                // loadMasterSheet(); // Doing this might disrupt the view if they are deep in scrolling.
+
+            } catch (err) {
+                alert(err.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
     }
 
     function logout() {

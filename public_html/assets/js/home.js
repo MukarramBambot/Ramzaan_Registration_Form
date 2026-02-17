@@ -16,6 +16,37 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput.addEventListener('change', (e) => {
         if (e.target.files) {
             const newFiles = Array.from(e.target.files);
+            
+            // Validation: Max 6 files
+            if (newFiles.length > 6) {
+                showDialog({ 
+                    variant: 'danger', 
+                    title: 'Too Many Files', 
+                    message: 'You can only upload a maximum of 6 audition files.', 
+                    confirmLabel: 'OK' 
+                });
+                fileInput.value = ''; // Clear input
+                selectedFiles = [];
+                renderFiles();
+                return;
+            }
+
+            // Validation: Max 15MB per file
+            const oversizedFiles = newFiles.filter(f => f.size > 15 * 1024 * 1024);
+            if (oversizedFiles.length > 0) {
+                 const names = oversizedFiles.map(f => f.name).join(', ');
+                 showDialog({ 
+                    variant: 'danger', 
+                    title: 'File Too Large', 
+                    message: `The following files exceed the 15MB limit:\n\n${names}`, 
+                    confirmLabel: 'OK' 
+                });
+                fileInput.value = ''; // Clear input
+                selectedFiles = [];
+                renderFiles();
+                return;
+            }
+
             // Append new files (Logic from React was simple setFiles, here we can append or replace)
             // React logic: setFiles(Array.from(e.target.files)) which replaces.
             // Let's implement replacement to match exact React behavior:
@@ -39,144 +70,107 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Submit Logic ---
+    let isSubmitting = false;
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (submitBtn.disabled) return;
-
-        // Set Loading State
-        setSubmitting(true);
+        if (isSubmitting) return;
+        isSubmitting = true;
 
         const formData = new FormData(form);
+        const xhr = new XMLHttpRequest();
 
-        // Append files under `media_files` (server expects this key). Keep backward compatibility by
-        // also allowing `audition_files` on server-side.
-        selectedFiles.forEach(file => {
-            formData.append('media_files', file);
-        });
+        const progressContainer = document.getElementById("uploadProgressContainer");
+        const progressBar = document.getElementById("progressBar");
+        const percentText = document.getElementById("progressPercent");
+        const speedText = document.getElementById("uploadSpeed");
+        const timeText = document.getElementById("timeRemaining");
+        const submitBtn = document.getElementById("submit-btn");
 
-        // Preference is now checkboxes (multi-select). Collect checked values
+        // Preference logic
         const prefElems = Array.from(document.querySelectorAll('input[name="preference"]:checked'));
         if (prefElems.length === 0) {
-            showDialog({
-                variant: 'danger',
-                title: 'Validation Error',
-                message: 'Please select at least one option for "Register For".',
-                confirmLabel: 'OK'
-            });
-            setSubmitting(false);
+            showDialog({ variant: 'danger', title: 'Validation Error', message: 'Please select at least one option for "Register For".', confirmLabel: 'OK' });
+            isSubmitting = false;
             return;
         }
-
-        // Append each selected preference to the FormData (backend expects multiple values under same key)
+        formData.delete('preference');
         prefElems.forEach(elem => formData.append('preference', elem.value));
+        
+        // Files logic
+        formData.delete('media_files');
+        selectedFiles.forEach(file => formData.append('media_files', file));
 
-        let isRedirecting = false;
+        progressContainer.style.display = "block";
+        submitBtn.disabled = true;
+        
+        const startTime = Date.now();
+        const apiBase = 'https://api.madrasjamaatportal.org';
+        xhr.open("POST", `${apiBase}/api/registrations/`, true);
 
-        try {
-            // Use a sensible client timeout for uploads; if the connection is interrupted
-            // we'll fall back to a verification poll so users are not left in limbo.
-            const response = await apiFetch('/api/registrations/', {
-                method: 'POST',
-                body: formData,
-                requireAuth: false, // Registration is public
-                timeout: 20000 // 20s
-            });
-
-            // CRITICAL: Successfully created (201) or OK (200) - Short-circuit to success page
-            if (response.status === 200 || response.status === 201) {
-                console.log('Registration success:', response.status);
-                isRedirecting = true;
-                window.location.href = '/success.php';
-                return; // Exit immediately, redirection is in progress
-            }
-
-            const contentType = response.headers.get("content-type");
-            const isJson = contentType && contentType.includes("application/json");
-
-            // Error Handling
-            if (isJson) {
-                let errorData;
-                try {
-                    errorData = await response.json();
-                } catch (e) {
-                    errorData = { detail: "An unexpected error occurred and the server response could not be parsed." };
+        xhr.upload.onprogress = function(event) {
+            if (event.lengthComputable) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                progressBar.style.width = percent + "%";
+                percentText.innerText = percent + "%";
+                const elapsedSeconds = (Date.now() - startTime) / 1000;
+                const speed = event.loaded / elapsedSeconds;
+                const speedKB = (speed / 1024).toFixed(2);
+                speedText.innerText = speedKB + " KB/s";
+                const remainingBytes = event.total - event.loaded;
+                const remainingSeconds = remainingBytes / speed;
+                if (remainingSeconds > 0 && isFinite(remainingSeconds)) {
+                    timeText.innerText = Math.ceil(remainingSeconds) + "s remaining";
                 }
+            }
+        };
 
-                // Handle Duplicate ITS
-                if (response.status === 400 && errorData.its_number) {
+        xhr.onload = async function() {
+            if (xhr.status === 201 || xhr.status === 200) {
+                progressBar.style.width = "100%";
+                percentText.innerText = "100%";
+                timeText.innerText = "Completed";
+                submitBtn.innerText = "Submitted";
+                window.location.href = '/success.php';
+            } else {
+                let errorData = {};
+                try { errorData = JSON.parse(xhr.responseText); } catch(e) {}
+                
+                // Handle Duplicate ITS specifically if returned as 400
+                if (xhr.status === 400 && errorData.its_number) {
                     const itsMsg = Array.isArray(errorData.its_number) ? errorData.its_number[0] : errorData.its_number;
-                    if (itsMsg.toLowerCase().includes('already exists')) {
-                        showDialog({
-                            variant: 'info',
-                            title: 'Already Registered',
-                            message: "You have already registered for Sherullah 1447H with this ITS number.",
-                            confirmLabel: 'OK'
-                        });
-                        return;
+                    if (itsMsg.toLowerCase().includes('already registered')) {
+                         showDialog({ variant: 'info', title: 'Already Registered', message: "You have already registered with this ITS number.", confirmLabel: 'OK' });
+                         handleFailureReset();
+                         return;
                     }
                 }
-
-                // Generic Errors
-                const errorMessages = Object.entries(errorData)
-                    .map(([key, value]) => `${key.replace('_', ' ')}: ${Array.isArray(value) ? value[0] : value}`)
-                    .join('\n');
-
-                showDialog({
-                    variant: 'danger',
-                    title: 'Validation Error',
-                    message: errorMessages || `Submission failed (Error ${response.status}). Please check your input.`,
-                    confirmLabel: 'Fix Errors'
-                });
-
-            } else {
-                const fallbackMsg = response.status >= 500
-                    ? "Our server is currently experiencing issues. Please try again or check the status page later."
-                    : `An unexpected error occurred (Status ${response.status}). Please try again later.`;
-
-                showDialog({
-                    variant: 'danger',
-                    title: 'Registration Failed',
-                    message: fallbackMsg,
-                    confirmLabel: 'OK'
-                });
+                
+                handleFailureReset(`Submission failed (Error ${xhr.status}).`);
             }
+        };
 
-        } catch (err) {
-            console.error('Submission technical error:', err);
-                // --- DISTRIBUTED CONSISTENCY RECOVERY ---
-                // Use a short polling loop to verify whether the registration actually made
-                // it into the database despite the network/connection error. This avoids
-                // false failures while preventing double-submits.
-                const itsNumber = formData.get('its_number');
-                console.log(`Checking if registration exists for ITS: ${itsNumber} after connection error...`);
-
-                const found = await pollRegistrationExists(itsNumber, { attempts: 12, interval: 2000 });
-
-                if (found) {
-                    console.log('Recovery Success: Registration found in database despite connection error.');
-                    isRedirecting = true;
-                    window.location.href = '/success.php';
-                    return;
-                }
-
-                // If not found after polling, inform user and re-enable the form.
-                const networkMsg = err && err.isTimeout
-                    ? 'Submission timed out. The server may be busy. We checked for your registration but did not find it.'
-                    : 'Network error: Cannot reach the server. Please check your internet connection.';
-
-                showDialog({
-                    variant: 'danger',
-                    title: 'Connection Error',
-                    message: networkMsg,
-                    confirmLabel: 'Retry Later'
-                });
-        } finally {
-            // ONLY reset submitting state if we are NOT redirecting.
-            // This prevents the button from "flicking" back to active while the next page is loading.
-            if (!isRedirecting) {
-                setSubmitting(false);
+        xhr.onerror = async function() {
+            // Recovery polling if connection fails during upload
+            const itsNumber = formData.get('its_number');
+            const found = await pollRegistrationExists(itsNumber, { attempts: 6, interval: 3000 });
+            if (found) {
+                window.location.href = '/success.php';
+                return;
             }
+            handleFailureReset('Network error. Please check your connection.');
+        };
+
+        function handleFailureReset(msg) {
+            if (msg) showDialog({ variant: 'danger', title: 'Upload Failed', message: msg, confirmLabel: 'OK' });
+            progressContainer.style.display = "none";
+            progressBar.style.width = "0%";
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Submit";
+            isSubmitting = false;
         }
+
+        xhr.send(formData);
     });
 
     function setSubmitting(isSubmitting) {

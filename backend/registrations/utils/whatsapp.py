@@ -41,6 +41,8 @@ class WhatsAppAPIException(Exception):
 TEMPLATE_DUTY_ALLOTMENT = "duty_allotment_confirmed"
 TEMPLATE_DUTY_REMINDER = "duty_reminder_tomorrow"
 TEMPLATE_REGISTRATION_RECEIVED = "registration_received"
+TEMPLATE_CORRECTION_REQ_V1 = "correction_req_v1"
+TEMPLATE_CORRECTION_DONE_V1 = "correction_done_v1"
 
 LANGUAGE_CODE = "en"  # Default Language
 
@@ -212,19 +214,22 @@ def _send_template_message(phone: str, template_name: str, parameters: List[str]
 # PUBLIC WRAPPER FUNCTIONS
 # =============================================================================
 
-def send_duty_allotment(phone: str, full_name: str, duty_date: str, duty_time: str) -> Dict[str, Any]:
+def send_duty_allotment(phone: str, full_name: str, duty_date: str, duty_time: str, reporting_time: str = None) -> Dict[str, Any]:
     """
     Sends 'duty_allotment_confirmed' template.
     
     Template Params:
     {{1}} = Full Name
     {{2}} = Date
-    {{3}} = Time
+    {{3}} = Time (with Reporting Time appended)
     """
     # Defensive check for None
     full_name = full_name or "Brother/Sister"
     duty_date = str(duty_date)
     duty_time = str(duty_time)
+    
+    if reporting_time:
+        duty_time = f"{duty_time}\nReporting: {reporting_time}"
     
     params = [full_name, duty_date, duty_time]
     
@@ -234,18 +239,21 @@ def send_duty_allotment(phone: str, full_name: str, duty_date: str, duty_time: s
         parameters=params
     )
 
-def send_duty_reminder_tomorrow(phone: str, full_name: str, duty_date: str, duty_time: str) -> Dict[str, Any]:
+def send_duty_reminder_tomorrow(phone: str, full_name: str, duty_date: str, duty_time: str, reporting_time: str = None) -> Dict[str, Any]:
     """
     Sends 'duty_reminder_tomorrow' template.
     
     Template Params:
     {{1}} = Full Name
     {{2}} = Date
-    {{3}} = Time
+    {{3}} = Time (with Reporting Time appended)
     """
     full_name = full_name or "Brother/Sister"
     duty_date = str(duty_date)
     duty_time = str(duty_time)
+    
+    if reporting_time:
+        duty_time = f"{duty_time}\nReporting: {reporting_time}"
     
     params = [full_name, duty_date, duty_time]
     
@@ -326,3 +334,50 @@ def _send_text_message(phone: str, text: str) -> Dict[str, Any]:
 def send_admin_text_message(phone: str, text: str) -> Dict[str, Any]:
     """Convenience wrapper to send a plain text WhatsApp to admin or staff."""
     return _send_text_message(phone, text)
+
+def send_correction_notification(correction) -> Dict[str, Any]:
+    """
+    Sends correction request notification via WhatsApp text message.
+    """
+    registration = correction.registration
+    phone = registration.phone_number
+    # Base URL for correction link
+    base_url = "https://madrasjamaatportal.org"
+    link = f"{base_url}/correction.php?token={correction.token}"
+    
+    text = (
+        f"Assalamu Alaikum {registration.full_name},\n\n"
+        f"An administrator has requested a correction for your registration.\n\n"
+        f"Field: {correction.field_name.replace('_', ' ').title()}\n"
+        f"Message: {correction.admin_message}\n\n"
+        f"Please update here: {link}\n\n"
+        f"JazakAllah Khair,\n"
+        f"Jamaat Administration"
+    )
+    
+    return _send_text_message(phone, text)
+
+
+def send_correction_req_v1(phone: str, full_name: str, field_name: str, correction_link: str) -> Dict[str, Any]:
+    """
+    Sends 'correction_req_v1' template.
+    Variables: {{1}}=Name, {{2}}=Field, {{3}}=Link
+    """
+    params = [full_name or "Brother/Sister", field_name, correction_link]
+    return _send_template_message(
+        phone=phone,
+        template_name=TEMPLATE_CORRECTION_REQ_V1,
+        parameters=params
+    )
+
+def send_correction_done_v1(phone: str, full_name: str) -> Dict[str, Any]:
+    """
+    Sends 'correction_done_v1' template.
+    Variable: {{1}}=Name
+    """
+    params = [full_name or "Brother/Sister"]
+    return _send_template_message(
+        phone=phone,
+        template_name=TEMPLATE_CORRECTION_DONE_V1,
+        parameters=params
+    )

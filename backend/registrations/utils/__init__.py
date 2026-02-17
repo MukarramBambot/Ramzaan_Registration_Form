@@ -16,8 +16,11 @@ from ..models import Reminder, ReminderLog, DutyAssignment
 from .whatsapp import (
     send_registration_received, 
     send_duty_allotment,
-    send_duty_reminder_tomorrow
+    send_duty_reminder_tomorrow,
+    send_correction_req_v1,
+    send_correction_done_v1
 )
+from .reporting import get_reporting_time
 
 logger = logging.getLogger(__name__)
 
@@ -71,11 +74,14 @@ def send_whatsapp_message_for_allotment(duty_assignment):
     else:
         time_str = duty_assignment.get_namaaz_type_display()
 
+    reporting_time = get_reporting_time(duty_assignment)
+
     return send_duty_allotment(
         phone=user.phone_number,
         full_name=user.full_name,
         duty_date=date_str,
-        duty_time=time_str
+        duty_time=time_str,
+        reporting_time=reporting_time
     )
 
 # Timezone configuration
@@ -192,7 +198,8 @@ def send_email_reminder(reminder):
 
         # Call new service
         from .email_notifications import send_reminder_email
-        email_ok = send_reminder_email(user, date_str, time_str)
+        reporting_time = get_reporting_time(duty)
+        email_ok = send_reminder_email(user, date_str, time_str, reporting_time)
         
         if email_ok:
             # Update reminder
@@ -259,12 +266,14 @@ def send_whatsapp_reminder(reminder):
         else:
             time_label = duty.get_namaaz_type_display()
 
-        # The new function expects (phone, name, date, time)
+        # The new function expects (phone, name, date, time, reporting_time)
+        reporting_time = get_reporting_time(duty)
         result = send_duty_reminder_tomorrow(
             phone=user.phone_number,
             full_name=user.full_name,
             duty_date=date_str,
-            duty_time=time_label
+            duty_time=time_label,
+            reporting_time=reporting_time
         )
         
         success = result.get('success', False)

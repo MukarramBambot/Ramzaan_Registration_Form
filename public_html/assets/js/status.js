@@ -171,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="text-right">
                                     <div class="text-[10px] text-[#6B7280] uppercase font-bold tracking-tighter">Duty</div>
                                     <div class="text-[#112D4E] font-bold text-sm leading-tight">${(d.namaaz || '') + (d.type ? ' ' + d.type : '')}</div>
+                                    ${d.reporting_time ? `<div class="text-[11px] text-[#3F72AF] font-bold mt-1 bg-blue-50 px-2 py-0.5 rounded-md inline-block">Reporting: ${d.reporting_time}</div>` : ''}
                                 </div>
                             </div>
 

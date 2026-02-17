@@ -14,18 +14,18 @@ import logging
 
 from .models import (
     Registration, AuditionFile, DutyAssignment, 
-    UnlockLog, Reminder, ReminderLog, KhidmatRequest
+    UnlockLog, Reminder, ReminderLog, KhidmatRequest, RegistrationCorrection
 )
 from .serializers import (
     RegistrationSerializer, RegistrationCreateSerializer,
     AuditionFileSerializer, DutyAssignmentSerializer,
     DutyAssignmentCreateSerializer, UnlockSerializer,
     UnlockLogSerializer, ReminderSerializer, ReminderLogSerializer,
-    KhidmatRequestSerializer
+    KhidmatRequestSerializer, RegistrationCorrectionSerializer
 )
 from .utils import (
     create_reminder_for_assignment, cancel_reminders_for_assignment,
-    safe_task_delay
+    safe_task_delay, get_reporting_time
 )
 from .tasks import sync_to_sheets_task
 from .tasks import send_registration_confirmation_task
@@ -86,11 +86,12 @@ class RegistrationViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         """
-        Create new registration with audition file uploads.
-        Standardized error reporting and Celery task triggering.
+        Create new registration.
+        Minimized sync work: DB save + initial metadata.
+        Heavy lifting (Notifications, Sheets) moved to Celery via on_commit.
         """
         try:
-            # 1. Custom Validation (Duplicate ITS)
+            # 1. Fast Validation
             its_number = request.data.get('its_number')
             if its_number and Registration.objects.filter(its_number=its_number).exists():
                 return Response(
@@ -101,58 +102,85 @@ class RegistrationViewSet(viewsets.ModelViewSet):
             # 2. Serializer Validation & Save
             serializer = self.get_serializer(data=request.data)
             if not serializer.is_valid():
-                logger.warning(f"Registration validation failed: {serializer.errors}")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
             registration = serializer.save()
             
-            # 3. Handle Files
+            # 3. Handle Files (Sync Save but minimal meta)
             files = request.FILES.getlist('audition_files') or request.FILES.getlist('media_files')
             
+            # Validation: Minimum 1 file
             if not files:
-                 logger.warning(f"Registration failed: No file upload for {registration}")
-                 # We delete the registration if no file is provided (since we are in atomic block, 
-                 # we could also just return error and it will rollback)
+                 transaction.set_rollback(True)
                  return Response(
                      {'error': 'At least one audition file is required.'},
                      status=status.HTTP_400_BAD_REQUEST
                  )
 
+            # Validation: Max 6 files
             if len(files) > 6:
+                transaction.set_rollback(True)
                 return Response(
                     {'error': 'Maximum 6 audition files allowed'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
+            # Validation & Saving Loop
+            for f in files:
+                # Max 15MB (15 * 1024 * 1024 bytes)
+                if f.size > 15 * 1024 * 1024:
+                    transaction.set_rollback(True)
+                    return Response(
+                        {'error': f'File {f.name} exceeds 15MB limit.'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # Use .create() instead of bulk_create to ensure file storage works
+                AuditionFile.objects.create(registration=registration, audition_file_path=f)
             
-            # 4. Save Audition Files
-            for file in files:
-                AuditionFile.objects.create(
-                    registration=registration,
-                    audition_file_path=file
+            # Double check: ensure files were actually saved
+            if registration.audition_files.count() == 0:
+                transaction.set_rollback(True)
+                logger.error(f"Integrity Error: Registration {registration.id} has 0 files after save loop.")
+                return Response(
+                    {'error': 'File upload failed. Please try again.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-            
-            # 5. Schedule Background Tasks (Passed as IDs)
-            # We use on_commit to ensure tokens/transaction are finalized
+
+            # 4. Schedule Background Tasks
             def schedule_registration_tasks():
-                logger.info(f"Triggering background tasks for registration {registration.id}")
+                logger.info(f"Offloading post-registration tasks for ID: {registration.id}")
                 safe_task_delay(send_registration_confirmation_task, registration.id, non_blocking=True)
                 safe_task_delay(sync_to_sheets_task, registration.id, non_blocking=True)
 
             transaction.on_commit(schedule_registration_tasks)
 
-            # 6. Return standard serialized data
-            output_serializer = RegistrationSerializer(registration)
-            logger.info(f"Registration successful: {registration}")
-            return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+            # 5. Return Minimal Success Immediately
+            return Response({
+                'id': registration.id,
+                'status': 'success',
+                'message': 'Registration received'
+            }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            import traceback
-            logger.error(f"CRITICAL REGISTRATION FAILURE: {str(e)}\n{traceback.format_exc()}")
+            logger.error(f"REGISTRATION_FAILURE: {str(e)}", exc_info=True)
+            # Ensure rollback happens on any unexpected error
+            transaction.set_rollback(True) 
             return Response(
-                {'error': 'Registration failed. Please contact support if this persists.'},
+                {'error': 'Registration failed. Please try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
+    @action(detail=True, methods=['get'])
+    def auditions(self, request, pk=None):
+        """
+        Returns all audition files for a specific registration.
+        """
+        registration = self.get_object()
+        auditions = registration.audition_files.all().order_by('-uploaded_at')
+        serializer = AuditionFileSerializer(auditions, many=True)
+        return Response(serializer.data)
+
     @action(detail=False, methods=['get'])
     def search(self, request):
         """Search for registration and its assignments by ITS number"""
@@ -202,7 +230,8 @@ class RegistrationViewSet(viewsets.ModelViewSet):
                     "namaaz": namaaz,
                     "type": duty_type,
                     "request_status": request_status,
-                    "request_type": request_type
+                    "request_type": request_type,
+                    "reporting_time": get_reporting_time(duty)
                 })
             
             # Map audition files
@@ -251,6 +280,33 @@ class RegistrationViewSet(viewsets.ModelViewSet):
                 {'error': f'Failed to sync to Google Sheets: {result}. Check server logs for details.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class AuditionFileViewSet(viewsets.GenericViewSet, viewsets.mixins.RetrieveModelMixin, viewsets.mixins.UpdateModelMixin):
+    queryset = AuditionFile.objects.all()
+    serializer_class = AuditionFileSerializer
+    permission_classes = [IsAdminUser]
+
+    @action(detail=True, methods=['patch'])
+    def select_audition(self, request, pk=None):
+        """
+        Selects a specific audition file for a registration.
+        Ensures only one file is selected per registration.
+        """
+        audition = self.get_object()
+        registration = audition.registration
+        
+        try:
+            with transaction.atomic():
+                # Deselect all others for this registration
+                registration.audition_files.update(is_selected=False)
+                
+                # Select the target
+                audition.is_selected = True
+                audition.save(update_fields=['is_selected'])
+                
+            return Response({'status': 'success', 'message': 'Audition selected'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True, methods=['get'])
     def audition_files(self, request, pk=None):
@@ -640,3 +696,150 @@ class KhidmatRequestViewSet(viewsets.ModelViewSet):
             'request_id': khidmat_request.id,
             'status': 'rejected'
         })
+
+class AuditionFileViewSet(viewsets.GenericViewSet, viewsets.mixins.RetrieveModelMixin, viewsets.mixins.UpdateModelMixin):
+    queryset = AuditionFile.objects.all()
+    serializer_class = AuditionFileSerializer
+    permission_classes = [IsAdminUser]
+
+    @action(detail=True, methods=['patch'])
+    def select_audition(self, request, pk=None):
+        """
+        Selects a specific audition file for a registration.
+        Ensures only one file is selected per registration.
+        """
+        audition = self.get_object()
+        registration = audition.registration
+        
+        try:
+            with transaction.atomic():
+                # Deselect all others for this registration
+                registration.audition_files.update(is_selected=False)
+                
+                # Select the target
+                audition.is_selected = True
+                audition.save(update_fields=['is_selected'])
+                
+            return Response({'status': 'success', 'message': 'Audition selected'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CorrectionViewSet(viewsets.ModelViewSet):
+    """
+    API for managing Registration Corrections.
+    """
+    queryset = RegistrationCorrection.objects.all()
+    serializer_class = RegistrationCorrectionSerializer
+    
+    def get_permissions(self):
+        """
+        Admin required for listing/creating.
+        Public access allowed for retrieval/resolution via Token.
+        """
+        if self.action in ['retrieve_by_token', 'resolve_by_token']:
+            return [AllowAny()]
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def create(self, request, *args, **kwargs):
+        """
+        Admin requests a correction.
+        """
+        registration_id = request.data.get('registration')
+        field_name = request.data.get('field_name')
+        
+        # Verify Registration exists
+        if not Registration.objects.filter(id=registration_id).exists():
+            return Response({'error': 'Registration not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+        # Create Correction
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        correction = serializer.save()
+        
+        # Trigger Notification (Email/WhatsApp) via Celery on commit
+        def trigger_notification():
+            from .tasks import send_correction_notification_task
+            from .utils import safe_task_delay
+            safe_task_delay(send_correction_notification_task, correction.id, non_blocking=True)
+            
+        transaction.on_commit(trigger_notification)
+        
+        logger.info(f"Correction requested for Reg {registration_id}, Field: {field_name}, Token: {correction.token}")
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'], url_path='token/(?P<token>[^/.]+)')
+    def retrieve_by_token(self, request, token=None):
+        """
+        Public endpoint to get correction details by token.
+        """
+        try:
+            correction = RegistrationCorrection.objects.get(token=token)
+            
+            if correction.status == 'RESOLVED':
+                return Response({'error': 'This correction has already been resolved.'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            return Response({
+                'id': correction.id,
+                'field_name': correction.field_name,
+                'admin_message': correction.admin_message,
+                'registration_name': correction.registration.full_name,
+                'registration_its': correction.registration.its_number,
+                'status': correction.status
+            })
+        except RegistrationCorrection.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['post'], url_path='resolve/(?P<token>[^/.]+)')
+    def resolve_by_token(self, request, token=None):
+        """
+        Public endpoint to resolve the correction.
+        Updates the Registration model directly.
+        """
+        try:
+            correction = RegistrationCorrection.objects.get(token=token)
+            
+            if correction.status == 'RESOLVED':
+                return Response({'error': 'This correction has already been resolved.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            registration = correction.registration
+            field_name = correction.field_name
+            
+            # Update the field on Registration
+            # Handle special cases if necessary (e.g. file upload is handled by parser)
+            
+            if field_name == 'audition_files':
+                files = request.FILES.getlist('audition_files')
+                if not files:
+                    return Response({'error': 'No files uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Logic to add files (create AuditionFile objects)
+                for f in files:
+                    AuditionFile.objects.create(registration=registration, audition_file_path=f)
+                    
+            else:
+                # Standard field update
+                new_value = request.data.get(field_name)
+                if new_value is None:
+                     return Response({'error': 'New value is required'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                setattr(registration, field_name, new_value)
+                registration.save(update_fields=[field_name])
+
+            # Mark correction resolved
+            correction.status = 'RESOLVED'
+            correction.resolved_at = timezone.now()
+            correction.save()
+            
+            # Trigger notification
+            from .tasks import send_correction_completed_notification_task
+            transaction.on_commit(lambda: send_correction_completed_notification_task.delay(registration.id))
+
+            logger.info(f"Correction RESOLVED for Reg {registration.id}, Field: {field_name}")
+            
+            return Response({'status': 'success', 'message': 'Correction submitted successfully.'})
+            
+        except RegistrationCorrection.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_404_NOT_FOUND)
+

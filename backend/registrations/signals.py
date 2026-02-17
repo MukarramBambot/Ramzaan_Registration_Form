@@ -9,7 +9,8 @@ from .utils import safe_task_delay
 from .tasks import (
     send_registration_confirmation_task, 
     send_duty_allotment_notification_task,
-    sync_to_sheets_task
+    sync_to_sheets_task,
+    schedule_voice_reminder_task
 )
 from .utils.email_notifications import send_registration_email, send_allotment_email
 
@@ -50,6 +51,13 @@ def duty_assignment_post_save(sender, instance, created, **kwargs):
         except Exception as e:
             logger.error(f"[OnCommit] Failed to schedule task for duty {instance.id}: {str(e)}")
     
+    # Schedule voice reminder
+    try:
+        transaction.on_commit(lambda: safe_task_delay(schedule_voice_reminder_task, instance.id, non_blocking=True))
+        logger.info(f"[Signal] Voice reminder scheduling task enqueued for duty {instance.id}")
+    except Exception as e:
+        logger.error(f"[Signal] Failed to enqueue voice reminder task for duty {instance.id}: {str(e)}")
+
     try:
         transaction.on_commit(schedule_tasks)
         logger.info(f"[Signal] on_commit callback registered for duty {instance.id}")

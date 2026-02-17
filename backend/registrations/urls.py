@@ -7,10 +7,12 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     RegistrationViewSet,
     DutyAssignmentViewSet,
+    AuditionFileViewSet,
     UnlockLogViewSet,
     ReminderViewSet,
     ReminderLogViewSet,
     KhidmatRequestViewSet,
+    CorrectionViewSet,
     MeView,
     HealthCheckView
 )
@@ -19,10 +21,12 @@ from .views import (
 router = DefaultRouter()
 router.register(r'registrations', RegistrationViewSet, basename='registration')
 router.register(r'duty-assignments', DutyAssignmentViewSet, basename='duty-assignment')
+router.register(r'audition-files', AuditionFileViewSet, basename='audition-file')
 router.register(r'unlock-logs', UnlockLogViewSet, basename='unlock-log')
 router.register(r'reminders', ReminderViewSet, basename='reminder')
 router.register(r'reminder-logs', ReminderLogViewSet, basename='reminder-log')
 router.register(r'khidmat-requests', KhidmatRequestViewSet, basename='khidmat-request')
+router.register(r'corrections', CorrectionViewSet, basename='correction')
 
 urlpatterns = [
     path('auth/me/', MeView.as_view(), name='me'),

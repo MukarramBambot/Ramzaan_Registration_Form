@@ -1,11 +1,11 @@
 from rest_framework import serializers
-from .models import Registration, AuditionFile, DutyAssignment, UnlockLog, Reminder, ReminderLog, KhidmatRequest
+from .models import Registration, AuditionFile, DutyAssignment, UnlockLog, Reminder, ReminderLog, KhidmatRequest, RegistrationCorrection
 
 
 class AuditionFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuditionFile
-        fields = ['id', 'audition_file_path', 'audition_file_type', 'audition_display_name', 'uploaded_at']
+        fields = ['id', 'audition_file_path', 'audition_file_type', 'audition_display_name', 'is_selected', 'uploaded_at']
         read_only_fields = ['uploaded_at', 'audition_file_type', 'audition_display_name']
 
 
@@ -93,6 +93,8 @@ class RegistrationCreateSerializer(serializers.ModelSerializer):
             'SANAH': 'SANAH',
             'TAJWEED QURAN TILAWAT': 'TILAWAT',
             'TAJWEED QURAN MASJID TILAWAT': 'TILAWAT',
+            'TAJWID QURAN TILAWAT': 'TILAWAT',
+            'TAJWID QURAN MAJID TILAWAT': 'TILAWAT',
             'DUA E JOSHAN': 'JOSHAN',
             'DUA E JOSHEN': 'JOSHAN',
             'YASEEN': 'YASEEN',
@@ -343,3 +345,21 @@ class KhidmatRequestSerializer(serializers.ModelSerializer):
         # Remove assignment_id from validated_data (we already set assignment)
         validated_data.pop('assignment_id', None)
         return super().create(validated_data)
+
+
+class RegistrationCorrectionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Correction Requests.
+    """
+    registration_its = serializers.CharField(source='registration.its_number', read_only=True)
+    registration_name = serializers.CharField(source='registration.full_name', read_only=True)
+
+    class Meta:
+        model = RegistrationCorrection
+        fields = [
+            'id', 'registration', 'registration_its', 'registration_name',
+            'field_name', 'admin_message', 'token', 'status',
+            'created_at', 'resolved_at'
+        ]
+        read_only_fields = ['token', 'created_at', 'resolved_at']
+
