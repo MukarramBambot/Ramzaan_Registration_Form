@@ -10,8 +10,10 @@ HEADERS = [
     "Email",
     "Contact",
     "Preference",
-    "Registered At",
-    "Media File",
+    "Allotted Khidmat",
+    "Khidmat Date",
+    "Reporting Time",
+    "Media Files",
     "Status"
 ]
 
@@ -21,7 +23,7 @@ def ensure_headers(sheet, spreadsheet_id):
     """
     Check if row 1 is empty or missing headers; if so, write headers using RAW mode.
     """
-    range_name = f"{SHEET_NAME}!A1:H1"
+    range_name = f"{SHEET_NAME}!A1:J1"
     logger.error(f"GSYNC-DIAG: [ensure_headers] Checking headers in {range_name}")
     try:
         # 1. Read row 1
@@ -61,31 +63,50 @@ def ensure_headers(sheet, spreadsheet_id):
 def prepare_row_data(registration):
     """
     Constructs a list of values for a single registration row.
-    Formats the Media File column as a clickable HYPERLINK.
+    Enhanced to show all audio files as clickable URLs and allotment details.
     """
-    # 1. Capture Media Info
-    media_file = registration.audition_files.first()
-    media_cell = ""
+    from .utils.reporting import get_reporting_time
+
+    # 1. Capture All Media Files
+    audition_files = registration.audition_files.all()
+    media_urls = []
     
-    if media_file and media_file.audition_file_path:
-        filename = os.path.basename(media_file.audition_file_path.name)
-        # Ensure full domain URL
-        raw_url = media_file.audition_file_path.url
-        site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
-        full_url = f"{site_url}{raw_url}" if not raw_url.startswith('http') else raw_url
-        
-        # Construct formula: =HYPERLINK("url", "label")
-        media_cell = f'=HYPERLINK("{full_url}", "{filename}")'
-        logger.error(f"GSYNC-DIAG: Constructed HYPERLINK for {registration.its_number}: {media_cell}")
+    site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
     
-    # 2. Assemble Row (Sequential order per requirements)
+    for media_file in audition_files:
+        if media_file.audition_file_path:
+            filename = os.path.basename(media_file.audition_file_path.name)
+            raw_url = media_file.audition_file_path.url
+            full_url = f"{site_url}{raw_url}" if not raw_url.startswith('http') else raw_url
+            
+            # Construct formula: =HYPERLINK("url", "label")
+            media_urls.append(f'=HYPERLINK("{full_url}", "{filename}")')
+    
+    media_cell = "\n".join(media_urls)
+    
+    # 2. Fetch Khidmat Allotment Details
+    # Get the most recent/relevant duty assignment
+    duty = registration.duty_assignments.order_by('-duty_date').first()
+    
+    khidmat_name = "Not Allotted"
+    khidmat_date = ""
+    reporting_time = ""
+    
+    if duty:
+        khidmat_name = duty.get_namaaz_type_display()
+        khidmat_date = duty.duty_date.strftime('%Y-%m-%d')
+        reporting_time = get_reporting_time(duty) or "N/A"
+
+    # 3. Assemble Row (New order)
     return [
         registration.full_name,
         registration.its_number,
         registration.email,
         registration.phone_number,
         registration.get_preference_display(),
-        registration.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        khidmat_name,
+        khidmat_date,
+        reporting_time,
         media_cell,
         registration.get_status_display()
     ]

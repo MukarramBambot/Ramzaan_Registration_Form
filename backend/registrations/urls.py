@@ -31,6 +31,7 @@ router.register(r'corrections', CorrectionViewSet, basename='correction')
 urlpatterns = [
     path('auth/me/', MeView.as_view(), name='me'),
     path('health/', HealthCheckView.as_view(), name='health-check'),
+    path('unassign-khidmat/', DutyAssignmentViewSet.as_view({'post': 'unassign_khidmat'}), name='unassign-khidmat'),
     path('', include(router.urls)),
 ]
 

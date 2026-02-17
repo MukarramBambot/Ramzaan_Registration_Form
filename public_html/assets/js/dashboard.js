@@ -399,10 +399,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>
 
-                    <!-- Unlock -->
+                    <!-- Unassign -->
                     <div class="pt-4 border-t-2 border-[#DBE2EF]">
-                        <button onclick="startUnlock('${date}', '${duty}')" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-amber-500 text-amber-700 rounded-lg hover:bg-amber-50 transition-all font-medium">
-                            ${ICONS.unlock} Emergency Unlock
+                        <button onclick="startUnassign('${date}', '${duty}')" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-red-500 text-red-700 rounded-lg hover:bg-red-50 transition-all font-medium">
+                            ${ICONS.unlock} Unassign User From Khidmat
                         </button>
                     </div>
                 </div>
@@ -425,41 +425,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    window.startUnlock = function (date, duty) {
+    window.startUnassign = function (date, duty) {
         // Show Dialog with Input
         // Inject input into dialog message for reason capture
 
         const messageHTML = `
             <div class="space-y-4">
-                <p class="text-[#112D4E]">This will unlock the assignment. Use only if necessary.</p>
-                <div>
-                    <label class="block text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-2">Reason</label>
-                    <textarea id="unlock-reason" class="w-full px-3 py-2 border border-[#DBE2EF] rounded focus:outline-none focus:border-[#3F72AF]" rows="3"></textarea>
-                </div>
+                <p class="text-[#112D4E]">This will unassign the user from this khidmat slot. The slot will become available again.</p>
             </div>
         `;
 
         showDialog({
-            title: 'Emergency Unlock',
+            title: 'Unassign User',
             variant: 'danger',
-            confirmLabel: 'Unlock Now',
+            confirmLabel: 'Confirm Unassign',
             message: messageHTML,
             onConfirm: () => {
-                const reason = document.getElementById('unlock-reason').value;
-                if (!reason) {
-                    alert('Reason is required'); // Fallback alert or re-show dialog
-                    return;
-                }
-                performUnlock(date, duty, reason);
+                performUnassign(date, duty);
             }
         });
     };
 
-    async function performUnlock(date, duty, reason) {
+    async function performUnassign(date, duty) {
         try {
-            // Fetch full list to find Assignment ID (required for unlock endpoint)
-
-            // Let's do that for simplicity:
+            // Find Assignment ID
+            const key = getCellKey(date, duty);
+            const assignment = assignments.get(key);
+            
+            // Fetch list if id not in map
             const listRes = await apiFetch('/api/duty-assignments/');
             const list = await listRes.json();
 
@@ -467,20 +460,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             const isoDate = `${y}-${m}-${d}`;
 
             const item = list.find(a => a.duty_date === isoDate && a.namaaz_type === duty);
-            if (!item) throw new Error('Assignment not found');
+            if (!item) throw new Error('Duty assignment not found');
 
-            const res = await apiFetch(`/api/duty-assignments/${item.id}/unlock/`, {
+            const res = await apiFetch(`/api/unassign-khidmat/`, {
                 method: 'POST',
-                body: JSON.stringify({ reason })
+                body: JSON.stringify({ 
+                    khidmat_id: item.id
+                })
             });
 
-            if (!res.ok) throw new Error('Unlock Failed');
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || 'Unassign Failed');
+            }
 
-            // Success
+            // Success: Update local state
             assignments.delete(getCellKey(date, duty));
             renderBody();
             closeDetailsPanel();
-            showSuccess('Unlocked successfully');
+            showSuccess('User unassigned successfully');
 
         } catch (e) {
             showDialog({ variant: 'danger', title: 'Error', message: e.message });

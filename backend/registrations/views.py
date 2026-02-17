@@ -404,50 +404,63 @@ class DutyAssignmentViewSet(viewsets.ModelViewSet):
         
         return super().destroy(request, *args, **kwargs)
     
-    @action(detail=True, methods=['post'])
+    @action(detail=False, methods=['post'], url_path='unassign-khidmat')
     @transaction.atomic
-    def unlock(self, request, pk=None):
+    def unassign_khidmat(self, request):
         """
-        Emergency unlock a locked duty assignment.
-        Requires mandatory reason.
+        Refactored: Unassign a user from a khidmat slot.
+        - Removes assigned_user link
+        - Sets locked = False
+        - Updates Registration.status back to APPROVED
+        - Logs action in UnlockLog and audit fields
         """
-        assignment = self.get_object()
+        khidmat_id = request.data.get('khidmat_id')
+        if not khidmat_id:
+            return Response({'error': 'khidmat_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        if not assignment.locked:
-            return Response(
-                {'error': 'This duty is not locked'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        try:
+            # Use select_for_update to handle concurrency
+            assignment = DutyAssignment.objects.select_for_update().get(pk=khidmat_id)
+        except DutyAssignment.DoesNotExist:
+            return Response({'error': 'Duty assignment not found'}, status=status.HTTP_404_NOT_FOUND)
         
-        # Validate unlock reason
-        unlock_serializer = UnlockSerializer(data=request.data)
-        unlock_serializer.is_valid(raise_exception=True)
+        # Reason is no longer required - using default for audit tracking
+        reason = "Unassigned via Admin Dashboard"
         
-        reason = unlock_serializer.validated_data['reason']
+        assigned_user = assignment.assigned_user
+        if not assigned_user:
+            return Response({'error': 'No user assigned to this slot'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Update Registration status back to APPROVED
+        # This allows the user to be re-allotted later if needed
+        assigned_user.status = 'APPROVED'
+        assigned_user.save(update_fields=['status'])
         
-        # Create unlock log
-        unlock_log = UnlockLog.objects.create(
+        # 2. Log exactly what happened (Legacy Log for audit history)
+        UnlockLog.objects.create(
             duty_assignment=assignment,
             reason=reason,
             unlocked_by=request.user.username if request.user.is_authenticated else "Admin",
             duty_date=assignment.duty_date,
             namaaz_type=assignment.namaaz_type,
-            original_user_name=assignment.assigned_user.full_name,
-            original_user_its=assignment.assigned_user.its_number
+            original_user_name=assigned_user.full_name,
+            original_user_its=assigned_user.its_number
         )
         
-        # Cancel existing reminders
+        # 3. Update Audit fields and clear assignment in DutyAssignment
+        assignment.assigned_user = None
+        assignment.locked = False
+        assignment.removed_by = request.user if request.user.is_authenticated else None
+        assignment.removed_at = timezone.now()
+        assignment.removal_reason = reason
+        assignment.save()
+        
+        # 4. Cancel existing reminders
         cancel_reminders_for_assignment(assignment)
         
-        # Delete the assignment
-        assignment.delete()
+        logger.info(f"UNASSIGN_SUCCESS: Khidmat {khidmat_id} unassigned from {assigned_user.its_number} by {request.user}")
         
-        logger.info(f"Emergency unlock: {unlock_log}")
-        
-        return Response({
-            'message': 'Duty unlocked successfully',
-            'unlock_log_id': unlock_log.id
-        })
+        return Response({'success': True})
     
     @action(detail=False, methods=['get'])
     def grid(self, request):
@@ -465,13 +478,14 @@ class DutyAssignmentViewSet(viewsets.ModelViewSet):
             if date_key not in grid_data:
                 grid_data[date_key] = {}
             
+            user = assignment.assigned_user
             grid_data[date_key][assignment.namaaz_type] = {
                 'id': assignment.id,
-                'user_id': assignment.assigned_user.id,
-                'user_name': assignment.assigned_user.full_name,
-                'user_its': assignment.assigned_user.its_number,
-                'user_email': assignment.assigned_user.email,
-                'user_phone': assignment.assigned_user.phone_number,
+                'user_id': user.id if user else None,
+                'user_name': user.full_name if user else None,
+                'user_its': user.its_number if user else None,
+                'user_email': user.email if user else None,
+                'user_phone': user.phone_number if user else None,
                 'locked': assignment.locked,
                 'locked_at': assignment.locked_at
             }

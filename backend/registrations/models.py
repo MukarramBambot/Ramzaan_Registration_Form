@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 import os
@@ -26,7 +27,7 @@ class Registration(models.Model):
     preference = models.JSONField(default=list) # Reverted to JSONField as per DB
     status = models.CharField(
         max_length=20, 
-        choices=[('PENDING', 'Pending'), ('ALLOTTED', 'Allotted')],
+        choices=[('PENDING', 'Pending'), ('APPROVED', 'Approved'), ('ALLOTTED', 'Allotted')],
         default='PENDING'
     )
     
@@ -136,14 +137,21 @@ class DutyAssignment(models.Model):
     namaaz_type = models.CharField(max_length=20, choices=NAMAAZ_CHOICES)
     assigned_user = models.ForeignKey(
         Registration,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='duty_assignments'
     )
-    locked = models.BooleanField(default=True)
+    locked = models.BooleanField(default=False)
     allotment_notification_sent = models.BooleanField(default=False)
-    locked_at = models.DateTimeField(auto_now_add=True)
+    locked_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Audit fields for unassignment
+    removed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='removed_duties')
+    removed_at = models.DateTimeField(null=True, blank=True)
+    removal_reason = models.TextField(blank=True, null=True)
     
     # Additional fields from DB
     status = models.CharField(max_length=50, default='allotted')
@@ -161,7 +169,8 @@ class DutyAssignment(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.duty_date} - {self.namaaz_type} → {self.assigned_user.full_name}"
+        user_name = self.assigned_user.full_name if self.assigned_user else "Unassigned"
+        return f"{self.duty_date} - {self.namaaz_type} → {user_name}"
 
 
 class UnlockLog(models.Model):
