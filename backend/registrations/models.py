@@ -5,6 +5,9 @@ from django.utils import timezone
 import os
 import re
 import uuid
+import logging
+
+logger = logging.getLogger('registrations')
 
 class Registration(models.Model):
     """
@@ -212,6 +215,35 @@ class Reminder(models.Model):
     
     class Meta:
         ordering = ['scheduled_datetime']
+
+    def mark_sent(self):
+        """Mark reminder as sent in DB."""
+        self.status = 'SENT'
+        self.whatsapp_sent = True
+        self.sent_at = timezone.now()
+        self.save(update_fields=['status', 'whatsapp_sent', 'sent_at'])
+        logger.info(f"Reminder {self.id} marked as SENT")
+
+    def mark_failed(self, error="Unknown error"):
+        """Mark reminder as failed with error log."""
+        self.status = 'FAILED'
+        self.last_error = str(error)
+        self.save(update_fields=['status', 'last_error'])
+        logger.error(f"Reminder {self.id} marked as FAILED: {error}")
+
+    def mark_delivered(self):
+        """Update status to DELIVERED (idempotent)."""
+        if self.status != 'DELIVERED':
+            self.status = 'DELIVERED'
+            self.save(update_fields=['status'])
+            logger.info(f"Reminder {self.id} marked as DELIVERED")
+
+    def update_status(self, new_status):
+        """Generic status update with validation."""
+        valid_statuses = ['PENDING', 'SENT', 'DELIVERED', 'FAILED', 'CANCELLED']
+        if new_status in valid_statuses:
+            self.status = new_status
+            self.save(update_fields=['status'])
 
 
 class ReminderLog(models.Model):

@@ -38,9 +38,9 @@ class WhatsAppAPIException(Exception):
     pass
 
 # Template Constants
-TEMPLATE_DUTY_ALLOTMENT = "duty_allotment_confirmed"
-TEMPLATE_DUTY_REMINDER = "duty_reminder_tomorrow"
-TEMPLATE_REGISTRATION_RECEIVED = "registration_received"
+TEMPLATE_DUTY_ALLOTMENT = "duty_allot_v2"
+TEMPLATE_DUTY_REMINDER = "duty_remind_v2"
+TEMPLATE_REGISTRATION_RECEIVED = "reg_received_v2"
 TEMPLATE_CORRECTION_REQ_V1 = "correction_req_v1"
 TEMPLATE_CORRECTION_DONE_V1 = "correction_done_v1"
 
@@ -99,7 +99,12 @@ def _send_template_message(phone: str, template_name: str, parameters: List[str]
     }
 
     # 2. Build Payload
-    component_parameters = [{"type": "text", "text": str(p)} for p in parameters]
+    # 1. Sanitize Parameters (Meta Restriction: No newlines, no >4 consecutive spaces)
+    def clean_p(v):
+        if v is None: return ""
+        return " ".join(str(v).replace('\n', ' ').replace('\r', ' ').split())
+
+    component_parameters = [{"type": "text", "text": clean_p(p)} for p in parameters]
 
     payload = {
         "messaging_product": "whatsapp",

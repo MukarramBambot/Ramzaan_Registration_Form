@@ -149,9 +149,6 @@ def create_reminder_for_assignment(duty_assignment):
         return None
 
 
-
-
-
 def cancel_reminders_for_assignment(duty_assignment):
     """
     Cancel reminders when duty is unlocked/changed.
@@ -172,16 +169,6 @@ def cancel_reminders_for_assignment(duty_assignment):
 
 
 def send_email_reminder(reminder):
-    """
-    Send email reminder for a duty assignment.
-    Uses centralized email_notifications service.
-    
-    Args:
-        reminder: Reminder instance
-    
-    Returns:
-        bool: True if successful, False otherwise
-    """
     try:
         duty = reminder.duty_assignment
         user = duty.assigned_user
@@ -202,10 +189,10 @@ def send_email_reminder(reminder):
         email_ok = send_reminder_email(user, date_str, time_str, reporting_time)
         
         if email_ok:
-            # Update reminder
+            # Update reminder fields directly before mark_sent logic
             reminder.email_sent = True
             reminder.email_attempts += 1
-            reminder.save()
+            reminder.save(update_fields=['email_sent', 'email_attempts'])
             
             # Log success
             ReminderLog.objects.create(
@@ -224,7 +211,7 @@ def send_email_reminder(reminder):
         
         reminder.email_attempts += 1
         reminder.last_error = error_msg
-        reminder.save()
+        reminder.save(update_fields=['email_attempts', 'last_error'])
         
         # Log failure
         ReminderLog.objects.create(
@@ -238,17 +225,6 @@ def send_email_reminder(reminder):
 
 
 def send_whatsapp_reminder(reminder):
-    """
-    Send WhatsApp reminder using official WhatsApp Business API.
-    
-    Uses a pre-approved utility template for duty reminders.
-    
-    Args:
-        reminder: Reminder instance
-    
-    Returns:
-        bool: True if successful, False otherwise
-    """
     try:
         duty = reminder.duty_assignment
         user = duty.assigned_user
@@ -278,26 +254,24 @@ def send_whatsapp_reminder(reminder):
         
         success = result.get('success', False)
         
-        # Save metadata regardless of success
+        # Save metadata securely using update_fields
         reminder.whatsapp_message_id = result.get('message_id')
         reminder.whatsapp_status = 'SENT' if success else 'FAILED'
+        
         if success:
              reminder.whatsapp_sent = True
              reminder.whatsapp_attempts += 1
              reminder.sent_at = timezone.now()
-             # Clear previous errors on success
              reminder.last_error = ""
+             reminder.save(update_fields=['whatsapp_message_id', 'whatsapp_status', 'whatsapp_sent', 'whatsapp_attempts', 'sent_at', 'last_error'])
         else:
-             # Extract error
              error_data = result.get('response', {}).get('error', {})
              error_msg = str(error_data) if isinstance(error_data, dict) else str(result.get('response'))
              reminder.whatsapp_attempts += 1
              reminder.last_error = error_msg
-        
-        reminder.save()
+             reminder.save(update_fields=['whatsapp_message_id', 'whatsapp_status', 'whatsapp_attempts', 'last_error'])
         
         if success:
-            # Log success
             ReminderLog.objects.create(
                 reminder=reminder,
                 channel='WHATSAPP',
@@ -314,34 +288,14 @@ def send_whatsapp_reminder(reminder):
         
         reminder.whatsapp_attempts += 1
         reminder.last_error = error_msg
-        reminder.save()
+        reminder.save(update_fields=['whatsapp_attempts', 'last_error'])
         
-        # Log failure
         ReminderLog.objects.create(
             reminder=reminder,
             channel='WHATSAPP',
             success=False,
             message=error_msg
         )
-        
-        return False
-        
-    except Exception as e:
-        error_msg = f"WhatsApp send failed: {str(e)}"
-        logger.error(f"Reminder {reminder.id} - {error_msg}")
-        
-        reminder.whatsapp_attempts += 1
-        reminder.last_error = error_msg
-        reminder.save()
-        
-        # Log failure
-        ReminderLog.objects.create(
-            reminder=reminder,
-            channel='WHATSAPP',
-            success=False,
-            message=error_msg
-        )
-        
         return False
 
 
@@ -349,15 +303,14 @@ def process_pending_reminders():
     """
     Process all pending reminders that are due.
     Called by Celery beat task periodically.
-    
-    Returns:
-        dict: Summary of processed reminders
     """
+    from django.db import transaction
     now = timezone.now()
     
-    # Find all pending reminders that are due
+    # Find all reminders that need processing (PENDING or FAILED)
+    # We allow retrying FAILED if attempts < MAX_RETRY_ATTEMPTS
     due_reminders = Reminder.objects.filter(
-        status='PENDING',
+        status__in=['PENDING', 'FAILED'],
         scheduled_datetime__lte=now
     ).select_related('duty_assignment', 'duty_assignment__assigned_user')
     
@@ -374,36 +327,40 @@ def process_pending_reminders():
     logger.info(f"Processing {stats['total_due']} due reminders...")
     
     for reminder in due_reminders:
-        email_ok = False
-        whatsapp_ok = False
-        
-        # Send email (if not already sent)
-        if not reminder.email_sent and reminder.email_attempts < MAX_RETRY_ATTEMPTS:
-            email_ok = send_email_reminder(reminder)
-            if email_ok:
-                stats['email_success'] += 1
-            else:
-                stats['email_failed'] += 1
-        elif reminder.email_sent:
-            email_ok = True
-        
-        # Send WhatsApp (if not already sent)
-        if not reminder.whatsapp_sent and reminder.whatsapp_attempts < MAX_RETRY_ATTEMPTS:
-            whatsapp_ok = send_whatsapp_reminder(reminder)
-            if whatsapp_ok:
-                stats['whatsapp_success'] += 1
-            else:
-                stats['whatsapp_failed'] += 1
-        elif reminder.whatsapp_sent:
-            whatsapp_ok = True
-        
-        # Update reminder status
-        if email_ok and whatsapp_ok:
-            reminder.mark_sent()
-            stats['completed'] += 1
-        elif reminder.email_attempts >= MAX_RETRY_ATTEMPTS and reminder.whatsapp_attempts >= MAX_RETRY_ATTEMPTS:
-            reminder.mark_failed("Max retry attempts reached")
-            stats['failed'] += 1
+        try:
+            with transaction.atomic():
+                # Refresh from DB to ensure we have latest status
+                reminder.refresh_from_db()
+                
+                # Double-check status to avoid race conditions
+                if reminder.status in ['SENT', 'DELIVERED', 'CANCELLED']:
+                    continue
+
+                email_ok = reminder.email_sent
+                whatsapp_ok = reminder.whatsapp_sent
+                
+                # Send email (if not already sent)
+                if not email_ok and reminder.email_attempts < MAX_RETRY_ATTEMPTS:
+                    email_ok = send_email_reminder(reminder)
+                    if email_ok: stats['email_success'] += 1
+                    else: stats['email_failed'] += 1
+                
+                # Send WhatsApp (if not already sent)
+                if not whatsapp_ok and reminder.whatsapp_attempts < MAX_RETRY_ATTEMPTS:
+                    whatsapp_ok = send_whatsapp_reminder(reminder)
+                    if whatsapp_ok: stats['whatsapp_success'] += 1
+                    else: stats['whatsapp_failed'] += 1
+                
+                # Update high-level reminder status
+                if email_ok and whatsapp_ok:
+                    reminder.mark_sent()
+                    stats['completed'] += 1
+                elif reminder.email_attempts >= MAX_RETRY_ATTEMPTS and reminder.whatsapp_attempts >= MAX_RETRY_ATTEMPTS:
+                    reminder.mark_failed("Max retry attempts reached for all channels")
+                    stats['failed'] += 1
+        except Exception as e:
+            logger.error(f"Error processing reminder {reminder.id}: {str(e)}")
+            # Error here doesn't crash the loop, just logs and continues
     
     logger.info(f"Reminder processing complete: {stats}")
     return stats

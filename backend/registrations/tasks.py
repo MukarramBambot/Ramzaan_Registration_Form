@@ -44,12 +44,15 @@ def process_reminders_task():
         dict: Processing statistics
     """
     try:
-        logger.info("Starting reminder processing task...")
+        logger.info("[Celery] Starting reminder processing task...")
+        # We wrap the utility call to ensure task-level reporting
         stats = process_pending_reminders()
-        logger.info(f"Reminder processing task completed: {stats}")
+        logger.info(f"[Celery] Reminder processing completed: {stats}")
         return stats
     except Exception as e:
-        logger.error(f"Reminder processing task failed: {str(e)}")
+        logger.critical(f"[Celery] CRITICAL FAILURE in reminder task: {str(e)}")
+        # We still raise if it's a transient infrastructure issue, 
+        # but the business logic errors are caught in the loop inside process_pending_reminders.
         raise
 
 

@@ -26,10 +26,6 @@ ENV/
 *.py[cod]
 *$py.class
 
-# --- Environment Secrets ---
-.env
-.env.*
-
 # --- OS / System ---
 .DS_Store
 Thumbs.db
