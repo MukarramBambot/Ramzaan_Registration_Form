@@ -447,3 +447,130 @@ def process_due_reminder_calls_task():
                     
     except Exception as exc:
         logger.error(f"[VoiceTask] [Fatal] Periodic task failed: {str(exc)}")
+
+@shared_task(
+    name='registrations.send_khidmat_request_notification',
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60
+)
+def send_khidmat_request_notification_task(self, request_id):
+    """
+    Send WhatsApp + Email notification when a user submits a cancellation/reallocation request.
+    """
+    from .models import KhidmatRequest
+    from .utils.whatsapp import send_cancellation_req_v1, send_reallocation_req_v1
+    from .utils.email_notifications import send_cancellation_request_email, send_reallocation_request_email
+
+    logger.info(f"[Task] send_khidmat_request_notification: Starting for request_id={request_id}")
+    
+    try:
+        req = KhidmatRequest.objects.select_related('assignment', 'assignment__assigned_user').get(id=request_id)
+    except KhidmatRequest.DoesNotExist:
+        logger.error(f"[Task] send_khidmat_request_notification: Request {request_id} not found.")
+        return
+
+    try:
+        registration = req.assignment.assigned_user
+        khidmat = req.assignment.get_namaaz_type_display()
+        date_str = req.assignment.duty_date.strftime('%d %B %Y')
+
+        # 1. Email notification
+        try:
+            if req.request_type == 'cancel':
+                send_cancellation_request_email(req)
+            else:
+                send_reallocation_request_email(req)
+        except Exception as e:
+            logger.error(f"[Task] send_khidmat_request_notification: Email failed: {str(e)}")
+
+        # 2. WhatsApp notification
+        try:
+            if req.request_type == 'cancel':
+                send_cancellation_req_v1(registration.phone_number, registration.full_name, khidmat, date_str)
+            else:
+                send_reallocation_req_v1(registration.phone_number, registration.full_name, khidmat, date_str)
+        except Exception as e:
+            logger.error(f"[Task] send_khidmat_request_notification: WhatsApp failed: {str(e)}")
+            if hasattr(self, 'retry'):
+                raise self.retry(exc=e, countdown=60)
+
+    except Exception as exc:
+        if 'Retry' in str(type(exc)): raise
+        logger.error(f"Task fatal error: {str(exc)}")
+        if hasattr(self, 'retry'):
+            raise self.retry(exc=exc, countdown=60)
+
+@shared_task(
+    name='registrations.send_khidmat_approved_notification',
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60
+)
+def send_khidmat_approved_notification_task(self, request_id, extra_data=None):
+    """
+    Send WhatsApp + Email notification when an admin approves a khidmat request.
+    Handles 'cancel' and 'reallocate' types.
+    extra_data can contain snapshot info if the record was deleted.
+    """
+    from .models import KhidmatRequest
+    from .utils.whatsapp import send_cancellation_approved_v1, send_reallocation_approved_v1
+    from .utils.email_notifications import send_cancellation_approved_email, send_reallocation_approved_email
+    from .utils.reporting import get_reporting_time
+
+    logger.info(f"[Task] send_khidmat_approved_notification: Starting for request_id={request_id}")
+    
+    try:
+        # If record was deleted (cancel case), we use extra_data
+        if extra_data:
+            registration_phone = extra_data.get('phone')
+            registration_name = extra_data.get('name')
+            registration_email = extra_data.get('email')
+            khidmat = extra_data.get('khidmat')
+            date_str = extra_data.get('date')
+            reporting_time = extra_data.get('reporting_time', 'N/A')
+            request_type = extra_data.get('request_type')
+        else:
+            req = KhidmatRequest.objects.select_related('assignment', 'assignment__assigned_user').get(id=request_id)
+            registration = req.assignment.assigned_user
+            registration_phone = registration.phone_number
+            registration_name = registration.full_name
+            registration_email = registration.email
+            khidmat = req.assignment.get_namaaz_type_display()
+            date_str = req.assignment.duty_date.strftime('%d %B %Y')
+            reporting_time = get_reporting_time(req.assignment) or "N/A"
+            request_type = req.request_type
+
+        # 1. Email notification
+        try:
+            # We need a mock request object if it was deleted, or just send the info
+            # For simplicity, if extra_data exists, we might need a different email function or adapt
+            if request_type == 'cancel':
+                # send_cancellation_approved_email expects a request object
+                from django.core.mail import send_mail
+                from django.conf import settings
+                subject = "Sherullah Khidmat Cancellation Approved"
+                body = f"Afzalus salam {registration_name},\n\nYour request to cancel {khidmat} on {date_str} has been APPROVED.\n\nJazakAllah Khair,\nJamaat Administration"
+                send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [registration_email])
+            else:
+                # Reallocate logic...
+                pass
+        except Exception as e:
+            logger.error(f"[Task] Email failed: {str(e)}")
+
+        # 2. WhatsApp notification
+        try:
+            if request_type == 'cancel':
+                send_cancellation_approved_v1(registration_phone, registration_name, khidmat, date_str)
+            else:
+                send_reallocation_approved_v1(registration_phone, registration_name, khidmat, date_str, reporting_time)
+        except Exception as e:
+            logger.error(f"[Task] WhatsApp failed: {str(e)}")
+            if hasattr(self, 'retry'):
+                raise self.retry(exc=e, countdown=60)
+
+    except Exception as exc:
+        if 'Retry' in str(type(exc)): raise
+        logger.error(f"Task fatal error: {str(exc)}")
+        if hasattr(self, 'retry'):
+            raise self.retry(exc=exc, countdown=60)

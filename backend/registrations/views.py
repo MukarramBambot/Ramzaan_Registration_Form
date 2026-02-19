@@ -109,16 +109,8 @@ class RegistrationViewSet(viewsets.ModelViewSet):
             # 3. Handle Files (Sync Save but minimal meta)
             files = request.FILES.getlist('audition_files') or request.FILES.getlist('media_files')
             
-            # Validation: Minimum 1 file
-            if not files:
-                 transaction.set_rollback(True)
-                 return Response(
-                     {'error': 'At least one audition file is required.'},
-                     status=status.HTTP_400_BAD_REQUEST
-                 )
-
             # Validation: Max 6 files
-            if len(files) > 6:
+            if files and len(files) > 6:
                 transaction.set_rollback(True)
                 return Response(
                     {'error': 'Maximum 6 audition files allowed'},
@@ -137,15 +129,6 @@ class RegistrationViewSet(viewsets.ModelViewSet):
                 
                 # Use .create() instead of bulk_create to ensure file storage works
                 AuditionFile.objects.create(registration=registration, audition_file_path=f)
-            
-            # Double check: ensure files were actually saved
-            if registration.audition_files.count() == 0:
-                transaction.set_rollback(True)
-                logger.error(f"Integrity Error: Registration {registration.id} has 0 files after save loop.")
-                return Response(
-                    {'error': 'File upload failed. Please try again.'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
 
             # 4. Schedule Background Tasks
             def schedule_registration_tasks():
@@ -594,7 +577,16 @@ class KhidmatRequestViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         
-        logger.info(f"Khidmat request created: {serializer.data['id']} - {serializer.data['request_type']}")
+        khidmat_request_id = serializer.data['id']
+        
+        # Trigger Notification (WhatsApp + Email) via Celery on commit
+        def trigger_request_notification():
+            from .tasks import send_khidmat_request_notification_task
+            safe_task_delay(send_khidmat_request_notification_task, khidmat_request_id, non_blocking=True)
+            
+        transaction.on_commit(trigger_request_notification)
+        
+        logger.info(f"Khidmat request created: {khidmat_request_id} - {serializer.data['request_type']}")
         
         return Response(
             {
@@ -635,6 +627,17 @@ class KhidmatRequestViewSet(viewsets.ModelViewSet):
         
         logger.info(f"Processing approval for request {pk}: {request_type} for user {registration.its_number}")
         
+        # Capture data for notification BEFORE deletion
+        snapshot_data = {
+            'phone': registration.phone_number,
+            'name': registration.full_name,
+            'email': registration.email,
+            'khidmat': assignment.get_namaaz_type_display(),
+            'date': assignment.duty_date.strftime('%d %B %Y'),
+            'reporting_time': get_reporting_time(assignment) or "N/A",
+            'request_type': request_type
+        }
+
         # Update request status FIRST (before deleting assignment)
         khidmat_request.status = 'approved'
         khidmat_request.reviewed_at = timezone.now()
@@ -666,6 +669,14 @@ class KhidmatRequestViewSet(viewsets.ModelViewSet):
             else:
                 logger.info(f"Registration {registration.id} still has {remaining_duties} remaining duties")
         
+        # Trigger Notification (WhatsApp + Email) via Celery on commit
+        def trigger_approval_notification():
+            from .tasks import send_khidmat_approved_notification_task
+            # Pass snapshot_data because assignment is deleted for 'cancel'
+            safe_task_delay(send_khidmat_approved_notification_task, pk, snapshot_data, non_blocking=True)
+            
+        transaction.on_commit(trigger_approval_notification)
+
         logger.info(f"Khidmat request {pk} approved successfully")
         
         return Response({

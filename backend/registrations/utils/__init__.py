@@ -57,8 +57,10 @@ def send_whatsapp_message_for_registration(registration):
     """
     return send_registration_received(
         phone=registration.phone_number,
-        full_name=registration.full_name
+        full_name=registration.full_name,
+        khidmat=registration.get_preference_display()
     )
+
 
 def send_whatsapp_message_for_allotment(duty_assignment):
     """

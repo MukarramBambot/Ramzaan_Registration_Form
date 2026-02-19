@@ -44,6 +44,12 @@ TEMPLATE_REGISTRATION_RECEIVED = "reg_received_v2"
 TEMPLATE_CORRECTION_REQ_V1 = "correction_req_v1"
 TEMPLATE_CORRECTION_DONE_V1 = "correction_done_v1"
 
+# New Templates
+TEMPLATE_REALLOCATION_REQ = "reallocation_req_v1"
+TEMPLATE_REALLOCATION_APPROVED = "reallocation_approved_v1"
+TEMPLATE_CANCELLATION_REQ = "cancellation_req_v1"
+TEMPLATE_CANCELLATION_APPROVED = "cancellation_approved_v1"
+
 LANGUAGE_CODE = "en"  # Default Language
 
 def _mask_phone_number(phone: str) -> str:
@@ -121,6 +127,29 @@ def _send_template_message(phone: str, template_name: str, parameters: List[str]
             ]
         }
     }
+
+    # 2.5 Validation: Parameter Count Check
+    TEMPLATE_PARAMS_CHECK = {
+        TEMPLATE_DUTY_ALLOTMENT: 4,
+        TEMPLATE_DUTY_REMINDER: 4,
+        TEMPLATE_REGISTRATION_RECEIVED: 2,
+        TEMPLATE_CORRECTION_REQ_V1: 4,
+        TEMPLATE_CORRECTION_DONE_V1: 1,
+        TEMPLATE_REALLOCATION_REQ: 3,
+        TEMPLATE_REALLOCATION_APPROVED: 4,
+        TEMPLATE_CANCELLATION_REQ: 3,
+        TEMPLATE_CANCELLATION_APPROVED: 3,
+    }
+
+    expected_count = TEMPLATE_PARAMS_CHECK.get(template_name)
+    if expected_count is not None and len(parameters) != expected_count:
+        err_msg = f"[WhatsApp] Parameter mismatch for '{template_name}': Expected {expected_count}, got {len(parameters)}"
+        logger.error(err_msg)
+        return {
+            "success": False,
+            "status_code": 400,
+            "response": {"error": err_msg}
+        }
 
     # 3. Log Request (Masked)
     masked_phone = _mask_phone_number(normalized_to)
@@ -221,22 +250,20 @@ def _send_template_message(phone: str, template_name: str, parameters: List[str]
 
 def send_duty_allotment(phone: str, full_name: str, duty_date: str, duty_time: str, reporting_time: str = None) -> Dict[str, Any]:
     """
-    Sends 'duty_allotment_confirmed' template.
+    Sends 'duty_allotment_confirmed' template (duty_allot_v2).
     
     Template Params:
     {{1}} = Full Name
     {{2}} = Date
-    {{3}} = Time (with Reporting Time appended)
+    {{3}} = Khidmat / Namaaz Type
+    {{4}} = Reporting Time
     """
-    # Defensive check for None
     full_name = full_name or "Brother/Sister"
     duty_date = str(duty_date)
     duty_time = str(duty_time)
+    reporting_time = reporting_time or "As per schedule"
     
-    if reporting_time:
-        duty_time = f"{duty_time}\nReporting: {reporting_time}"
-    
-    params = [full_name, duty_date, duty_time]
+    params = [full_name, duty_date, duty_time, reporting_time]
     
     return _send_template_message(
         phone=phone,
@@ -246,21 +273,20 @@ def send_duty_allotment(phone: str, full_name: str, duty_date: str, duty_time: s
 
 def send_duty_reminder_tomorrow(phone: str, full_name: str, duty_date: str, duty_time: str, reporting_time: str = None) -> Dict[str, Any]:
     """
-    Sends 'duty_reminder_tomorrow' template.
+    Sends 'duty_reminder_tomorrow' template (duty_remind_v2).
     
     Template Params:
     {{1}} = Full Name
     {{2}} = Date
-    {{3}} = Time (with Reporting Time appended)
+    {{3}} = Khidmat / Namaaz Type
+    {{4}} = Reporting Time
     """
     full_name = full_name or "Brother/Sister"
     duty_date = str(duty_date)
     duty_time = str(duty_time)
+    reporting_time = reporting_time or "As per schedule"
     
-    if reporting_time:
-        duty_time = f"{duty_time}\nReporting: {reporting_time}"
-    
-    params = [full_name, duty_date, duty_time]
+    params = [full_name, duty_date, duty_time, reporting_time]
     
     return _send_template_message(
         phone=phone,
@@ -268,22 +294,25 @@ def send_duty_reminder_tomorrow(phone: str, full_name: str, duty_date: str, duty
         parameters=params
     )
 
-def send_registration_received(phone: str, full_name: str) -> Dict[str, Any]:
+def send_registration_received(phone: str, full_name: str, khidmat: str = "") -> Dict[str, Any]:
     """
-    Sends 'registration_received' template.
+    Sends 'registration_received' template (reg_received_v2).
     
     Template Params:
     {{1}} = Full Name
+    {{2}} = Khidmat / Preference
     """
     full_name = full_name or "Brother/Sister"
+    khidmat = khidmat or "Sherullah Services"
     
-    params = [full_name]
+    params = [full_name, khidmat]
     
     return _send_template_message(
         phone=phone,
         template_name=TEMPLATE_REGISTRATION_RECEIVED,
         parameters=params
     )
+
 
 
 def _send_text_message(phone: str, text: str) -> Dict[str, Any]:
@@ -342,38 +371,37 @@ def send_admin_text_message(phone: str, text: str) -> Dict[str, Any]:
 
 def send_correction_notification(correction) -> Dict[str, Any]:
     """
-    Sends correction request notification via WhatsApp text message.
+    Sends correction request notification via WhatsApp using 'correction_req_v1' template.
+    Variables: {{1}}=Name, {{2}}=Field, {{3}}=Admin Message, {{4}}=Link
     """
     registration = correction.registration
     phone = registration.phone_number
     # Base URL for correction link
     base_url = "https://madrasjamaatportal.org"
     link = f"{base_url}/correction.php?token={correction.token}"
+    field_display = correction.field_name.replace('_', ' ').title()
     
-    text = (
-        f"Assalamu Alaikum {registration.full_name},\n\n"
-        f"An administrator has requested a correction for your registration.\n\n"
-        f"Field: {correction.field_name.replace('_', ' ').title()}\n"
-        f"Message: {correction.admin_message}\n\n"
-        f"Please update here: {link}\n\n"
-        f"JazakAllah Khair,\n"
-        f"Jamaat Administration"
+    return send_correction_req_v1(
+        phone, 
+        registration.full_name, 
+        field_display, 
+        correction.admin_message,
+        link
     )
-    
-    return _send_text_message(phone, text)
 
 
-def send_correction_req_v1(phone: str, full_name: str, field_name: str, correction_link: str) -> Dict[str, Any]:
+def send_correction_req_v1(phone: str, full_name: str, field_name: str, admin_message: str, correction_link: str) -> Dict[str, Any]:
     """
     Sends 'correction_req_v1' template.
-    Variables: {{1}}=Name, {{2}}=Field, {{3}}=Link
+    Variables: {{1}}=Name, {{2}}=Field, {{3}}=Admin Message, {{4}}=Link
     """
-    params = [full_name or "Brother/Sister", field_name, correction_link]
+    params = [full_name or "Brother/Sister", field_name, admin_message or "Please check your details.", correction_link]
     return _send_template_message(
         phone=phone,
         template_name=TEMPLATE_CORRECTION_REQ_V1,
         parameters=params
     )
+
 
 def send_correction_done_v1(phone: str, full_name: str) -> Dict[str, Any]:
     """
@@ -386,3 +414,39 @@ def send_correction_done_v1(phone: str, full_name: str) -> Dict[str, Any]:
         template_name=TEMPLATE_CORRECTION_DONE_V1,
         parameters=params
     )
+
+# -------------------------------------------------------------------
+# Khidmat Request Wrappers (Cancellation/Reallocation)
+# -------------------------------------------------------------------
+
+def send_cancellation_req_v1(phone: str, full_name: str, khidmat: str, date: str) -> Dict[str, Any]:
+    """
+    Sends 'cancellation_req_v1' template.
+    Variables: {{1}}=Name, {{2}}=Khidmat, {{3}}=Date
+    """
+    params = [full_name or "Brother/Sister", khidmat, date]
+    return _send_template_message(phone, TEMPLATE_CANCELLATION_REQ, params)
+
+def send_cancellation_approved_v1(phone: str, full_name: str, khidmat: str, date: str) -> Dict[str, Any]:
+    """
+    Sends 'cancellation_approved_v1' template.
+    Variables: {{1}}=Name, {{2}}=Khidmat, {{3}}=Date
+    """
+    params = [full_name or "Brother/Sister", khidmat, date]
+    return _send_template_message(phone, TEMPLATE_CANCELLATION_APPROVED, params)
+
+def send_reallocation_req_v1(phone: str, full_name: str, khidmat: str, date: str) -> Dict[str, Any]:
+    """
+    Sends 'reallocation_req_v1' template.
+    Variables: {{1}}=Name, {{2}}=Khidmat, {{3}}=Date
+    """
+    params = [full_name or "Brother/Sister", khidmat, date]
+    return _send_template_message(phone, TEMPLATE_REALLOCATION_REQ, params)
+
+def send_reallocation_approved_v1(phone: str, full_name: str, khidmat: str, date: str, reporting_time: str) -> Dict[str, Any]:
+    """
+    Sends 'reallocation_approved_v1' template.
+    Variables: {{1}}=Name, {{2}}=Khidmat, {{3}}=Date, {{4}}=Reporting Time
+    """
+    params = [full_name or "Brother/Sister", khidmat, date, reporting_time]
+    return _send_template_message(phone, TEMPLATE_REALLOCATION_APPROVED, params)

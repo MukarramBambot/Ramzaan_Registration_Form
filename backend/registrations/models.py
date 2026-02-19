@@ -99,7 +99,9 @@ class AuditionFile(models.Model):
     audition_file_path = models.FileField(
         upload_to=audition_file_path,
         validators=[FileExtensionValidator(allowed_extensions=['mp3', 'wav', 'm4a', 'aac', 'mp4', 'mov', 'webm', 'ogg'])],
-        default=""
+        default="",
+        blank=True,
+        null=True
     )
     audition_file_type = models.CharField(max_length=10, choices=FILE_TYPES, default='audio')
     audition_display_name = models.CharField(max_length=255, default='')

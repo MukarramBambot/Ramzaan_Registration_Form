@@ -155,12 +155,110 @@ def send_correction_completed_email(registration):
     subject = "Sherullah Correction Received"
     
     body = f"""Afzalus salam {registration.full_name},
-
-Your correction has been received successfully.
-
-Our team will review the updated information shortly.
-
-JazakAllah Khair,
-Jamaat Administration
-"""
+ 
+ Your correction has been received successfully.
+ 
+ Our team will review the updated information shortly.
+ 
+ JazakAllah Khair,
+ Jamaat Administration
+ """
     return send_email(registration.email, subject, body)
+
+def send_cancellation_request_email(request):
+    """
+    Trigger: User submits cancellation request
+    """
+    registration = request.assignment.assigned_user
+    khidmat = request.assignment.get_namaaz_type_display()
+    date_str = request.assignment.duty_date.strftime('%d %B %Y')
+    
+    subject = "Sherullah Khidmat Cancellation Request Received"
+    body = f"""Afzalus salam {registration.full_name},
+ 
+ Your request to cancel the following khidmat has been received:
+ 
+ Khidmat: {khidmat}
+ Date: {date_str}
+ Reason: {request.reason}
+ 
+ Our team will review your request and notify you once it's processed.
+ 
+ JazakAllah Khair,
+ Jamaat Administration
+ """
+    return send_email(registration.email, subject, body)
+
+def send_cancellation_approved_email(request):
+    """
+    Trigger: Admin approves cancellation
+    """
+    registration = request.assignment.assigned_user
+    khidmat = request.assignment.get_namaaz_type_display()
+    date_str = request.assignment.duty_date.strftime('%d %B %Y')
+    
+    subject = "Sherullah Khidmat Cancellation Approved"
+    body = f"""Afzalus salam {registration.full_name},
+ 
+ Your request to cancel the following khidmat has been APPROVED:
+ 
+ Khidmat: {khidmat}
+ Date: {date_str}
+ 
+ This khidmat has been removed from your profile.
+ 
+ JazakAllah Khair,
+ Jamaat Administration
+ """
+    return send_email(registration.email, subject, body)
+
+def send_reallocation_request_email(request):
+    """
+    Trigger: User submits reallocation request
+    """
+    registration = request.assignment.assigned_user
+    khidmat = request.assignment.get_namaaz_type_display()
+    date_str = request.assignment.duty_date.strftime('%d %B %Y')
+    
+    subject = "Sherullah Khidmat Reallocation Request Received"
+    body = f"""Afzalus salam {registration.full_name},
+ 
+ Your request to reallocate the following khidmat has been received:
+ 
+ Original Khidmat: {khidmat}
+ Original Date: {date_str}
+ Preferred Date/Time: {request.preferred_date} / {request.preferred_time}
+ Reason: {request.reason}
+ 
+ Our team will review your request and notify you once it's processed.
+ 
+ JazakAllah Khair,
+ Jamaat Administration
+ """
+    return send_email(registration.email, subject, body)
+
+def send_reallocation_approved_email(request):
+    """
+    Trigger: Admin approves reallocation
+    """
+    registration = request.assignment.assigned_user
+    khidmat = request.assignment.get_namaaz_type_display()
+    date_str = request.assignment.duty_date.strftime('%d %B %Y')
+    reporting_time = get_reporting_time(request.assignment) or "N/A"
+    
+    subject = "Sherullah Khidmat Reallocation Approved"
+    body = f"""Afzalus salam {registration.full_name},
+ 
+ Your request to reallocate the following khidmat has been APPROVED:
+ 
+ Khidmat: {khidmat}
+ Date: {date_str}
+ Reporting Time: {reporting_time}
+ 
+ Please ensure you arrive on time for your new duty.
+ 
+ JazakAllah Khair,
+ Jamaat Administration
+ """
+    return send_email(registration.email, subject, body)
+
