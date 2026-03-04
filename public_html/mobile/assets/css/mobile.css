@@ -1,0 +1,54 @@
+/* mobile.css - PWA specific styles */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  overscroll-behavior-y: contain;
+}
+
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
+}
+
+/* Custom Scrollbar for subtle look */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(63, 114, 175, 0.2);
+  border-radius: 10px;
+}
+
+/* Transitions */
+.nav-item svg {
+  transition: transform 0.2s ease;
+}
+.nav-item:active svg {
+  transform: scale(0.9);
+}
+
+/* Card Hover effect (subtle for touch) */
+.date-card:active {
+  transform: scale(0.99);
+}
+
+/* Loading Animation tweaks */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - Jamaat Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        background-color: #f9f7f7;
+        color: #112d4e;
+        font-family: sans-serif;
+      }
+    </style>
+  </head>
+  <body
+    class="flex flex-col items-center justify-center min-h-screen p-6 text-center"
+  >
+    <div
+      class="bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full border border-[#DBE2EF]"
+    >
+      <div
+        class="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+      >
+        <svg
+          class="text-red-500 w-10 h-10"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M18.364 5.636l-12.728 12.728m0-12.728l12.728 12.728"
+          />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold mb-2">You're Offline</h1>
+      <p class="text-[#6B7280] text-sm mb-8">
+        Please check your internet connection to access the Madras Jamaat
+        Portal.
+      </p>
+      <button
+        onclick="window.location.reload()"
+        class="w-full bg-[#3F72AF] text-white py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-all"
+      >
+        Try Again
+      </button>
+    </div>
+  </body>
+</html>
