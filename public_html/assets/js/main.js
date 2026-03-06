@@ -40,6 +40,8 @@ const ScrollLockManager = {
             this.locks--;
             if (this.locks === 0) {
                 document.body.classList.remove('modal-open');
+                // Failsafe: ensure any manual styles are also cleared
+                document.body.style.overflow = '';
             }
         }
     }

@@ -227,11 +227,12 @@ class ReminderSerializer(serializers.ModelSerializer):
         ]
     
     def get_duty_details(self, obj):
+        user = obj.duty_assignment.assigned_user
         return {
             'date': obj.duty_assignment.duty_date,
             'namaaz': obj.duty_assignment.get_namaaz_type_display(),
-            'user_name': obj.duty_assignment.assigned_user.full_name,
-            'user_its': obj.duty_assignment.assigned_user.its_number
+            'user_name': user.full_name if user else "Unassigned",
+            'user_its': user.its_number if user else "N/A"
         }
 
 
@@ -275,8 +276,12 @@ class KhidmatRequestSerializer(serializers.ModelSerializer):
     
     def get_user_details(self, obj):
         """Return user information from the assignment"""
-        if not obj.assignment:
-            return None
+        if not obj.assignment or not obj.assignment.assigned_user:
+            return {
+                'full_name': "Unassigned",
+                'its_number': "N/A",
+                'phone_number': "N/A"
+            }
         user = obj.assignment.assigned_user
         return {
             'full_name': user.full_name,

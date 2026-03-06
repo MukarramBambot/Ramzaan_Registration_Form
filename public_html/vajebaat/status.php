@@ -70,47 +70,87 @@
 function checkVajStatus() {
     var its = document.getElementById('vaj-its').value.trim();
     var result = document.getElementById('vaj-result');
+    var btn = document.getElementById('vaj-search-btn');
 
     if (!/^\d{8}$/.test(its)) {
-        result.innerHTML = '<div class="bg-white border border-[#FCA5A5] rounded-2xl p-6 text-center">'
+        result.innerHTML = '<div class="bg-white border border-[#FCA5A5] rounded-2xl p-6 text-center shadow-sm">'
             + '<p class="text-red-500 font-semibold">Please enter a valid 8-digit ITS number.</p></div>';
         result.classList.remove('hidden');
         return;
     }
 
-    // Placeholder response — replace with real API call when backend is ready
-    // Mock data for demo
-    var mockData = {
-        "12345678": { date: "15th March 2026", status: "Confirmed", notes: "Please bring your original Takhmeen form." },
-        "87654321": { date: "20th March 2026", status: "Pending", notes: "Awaiting sector incharge approval." }
-    };
+    // Loading State
+    btn.disabled = true;
+    btn.innerHTML = '<span>Checking...</span>';
+    result.classList.add('opacity-50');
 
-    var data = mockData[its];
+    console.log("[Status] Checking status for ITS:", its);
+    var apiUrl = window.API_BASE + '/api/vajebaat/appointments/check_status/?its=' + its;
+    console.log("[Status] API URL:", apiUrl);
 
-    if (data) {
-        result.innerHTML = '<div class="bg-white border border-[#DBE2EF] rounded-2xl p-6 shadow">'
-            + '<div class="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">'
-            + '<svg class="w-6 h-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>'
-            + '</div>'
-            + '<div class="text-center mb-6">'
-            + '<p class="text-[#112D4E] font-bold text-lg">ITS: ' + its + '</p>'
-            + '</div>'
-            + '<div class="space-y-3 text-sm">'
-            + '<div class="flex justify-between py-2 border-b border-gray-50"><span class="text-gray-500">Appointment Date</span><span class="font-bold text-[#112D4E]">' + data.date + '</span></div>'
-            + '<div class="flex justify-between py-2 border-b border-gray-50"><span class="text-gray-500">Status</span><span class="font-bold ' + (data.status === 'Confirmed' ? 'text-green-600' : 'text-amber-500') + '">' + data.status + '</span></div>'
-            + '<div class="pt-2"><p class="text-gray-500 mb-1 font-medium">Admin Notes:</p><p class="text-[#112D4E] bg-gray-50 p-3 rounded-lg italic">"' + data.notes + '"</p></div>'
-            + '</div>'
-            + '</div>';
-    } else {
-        result.innerHTML = '<div class="bg-white border border-[#DBE2EF] rounded-2xl p-6 text-center shadow">'
-            + '<div class="w-12 h-12 bg-[#DBE2EF] rounded-full flex items-center justify-center mx-auto mb-4">'
-            + '<svg class="w-6 h-6 text-[#3F72AF]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>'
-            + '</div>'
-            + '<p class="text-[#112D4E] font-semibold text-lg mb-1">ITS: ' + its + '</p>'
-            + '<p class="text-[#6B7280] text-sm">No appointment record found. Please book one <a href="' + window.BASE_URL + '/vajebaat/appointment.php" class="text-[#3F72AF] hover:underline">here</a>.</p>'
-            + '</div>';
-    }
-    result.classList.remove('hidden');
+    fetch(apiUrl)
+        .then(response => {
+            if (response.status === 404) {
+                throw new Error('NOT_FOUND');
+            }
+            if (!response.ok) {
+                throw new Error('API_ERROR');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("[Status] API Response:", data);
+            
+            // Format status color and label
+            var statusClass = 'text-amber-500';
+            var statusLabel = data.status;
+            if (data.status === 'CONFIRMED') statusClass = 'text-green-600';
+            if (data.status === 'CANCELLED') statusClass = 'text-red-500';
+            if (data.status === 'COMPLETED') statusClass = 'text-blue-600';
+
+            var dateVal = data.assigned_date || 'Not yet assigned';
+            var slotVal = data.slot_time || 'TBD';
+
+            result.innerHTML = '<div class="bg-white border border-[#DBE2EF] rounded-3xl p-6 sm:p-8 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-500">'
+                + '<div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">'
+                + '<svg class="w-8 h-8 text-[#3F72AF]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>'
+                + '</div>'
+                + '<div class="text-center mb-8">'
+                + '<h3 class="text-[#112D4E] font-bold text-xl mb-1">' + data.name + '</h3>'
+                + '<p class="text-[#3F72AF] font-mono font-medium tracking-widest text-sm">' + data.its_masked + '</p>'
+                + '</div>'
+                + '<div class="space-y-4">'
+                + '<div class="p-4 bg-[#F9FAFB] rounded-2xl flex justify-between items-center"><span class="text-xs font-bold text-[#6B7280] uppercase tracking-tighter">Status</span><span class="font-bold ' + statusClass + '">' + statusLabel + '</span></div>'
+                + '<div class="p-4 bg-[#F9FAFB] rounded-2xl flex justify-between items-center"><span class="text-xs font-bold text-[#6B7280] uppercase tracking-tighter">Date</span><span class="font-bold text-[#112D4E]">' + dateVal + '</span></div>'
+                + '<div class="p-4 bg-[#F9FAFB] rounded-2xl flex justify-between items-center"><span class="text-xs font-bold text-[#6B7280] uppercase tracking-tighter">Slot</span><span class="font-bold text-[#112D4E]">' + slotVal + '</span></div>'
+                + '</div>'
+                + '</div>';
+        })
+        .catch(error => {
+            console.error("[Status] Error:", error);
+            if (error.message === 'NOT_FOUND') {
+                result.innerHTML = '<div class="bg-white border border-[#DBE2EF] rounded-3xl p-8 text-center shadow-xl animate-in fade-in duration-300">'
+                    + '<div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">'
+                    + '<svg class="w-8 h-8 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+                    + '</div>'
+                    + '<p class="text-[#112D4E] font-bold text-xl mb-2">Not Found</p>'
+                    + '<p class="text-[#6B7280] text-sm leading-relaxed mb-6">No appointment record found for ITS <span class="font-mono font-bold">' + its + '</span>. Please ensure the number is correct or book an appointment.</p>'
+                    + '<a href="' + window.BASE_URL + '/vajebaat/" class="inline-flex items-center gap-2 text-[#3F72AF] font-bold hover:underline">Book Appointment →</a>'
+                    + '</div>';
+            } else {
+                result.innerHTML = '<div class="bg-white border border-red-100 rounded-3xl p-8 text-center shadow-xl">'
+                    + '<p class="text-red-600 font-bold mb-2">Connection Error</p>'
+                    + '<p class="text-gray-500 text-sm">Unable to reach the server. Please try again later.</p>'
+                    + '</div>';
+            }
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<span>Check Status</span>' + 
+                '<svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+            result.classList.remove('opacity-50');
+            result.classList.remove('hidden');
+        });
 }
 
 // Allow Enter key to trigger search

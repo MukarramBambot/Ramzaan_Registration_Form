@@ -86,16 +86,29 @@ function openAuditionModal(file) {
     `;
 
     container.innerHTML = contentHTML;
+    
     if (typeof ScrollLockManager !== 'undefined') {
         ScrollLockManager.lock();
     } else {
         document.body.style.overflow = 'hidden';
     }
+
+    // Add event listeners to restore scroll when media ends
+    const mediaElement = container.querySelector('audio, video');
+    if (mediaElement) {
+        mediaElement.addEventListener('ended', () => {
+             if (typeof ScrollLockManager !== 'undefined') {
+                ScrollLockManager.unlock();
+            } else {
+                document.body.style.overflow = 'auto';
+            }
+        });
+    }
 }
 
 function closeAuditionModal() {
     const container = document.getElementById('audition-modal-container');
-    if (container) {
+    if (container && container.innerHTML !== '') {
         container.innerHTML = '';
         if (typeof ScrollLockManager !== 'undefined') {
             ScrollLockManager.unlock();

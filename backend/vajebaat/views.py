@@ -35,6 +35,7 @@ from .serializers import (
     VajebaatSlotSerializer,
     AssignSlotSerializer,
     MembersDirectorySerializer,
+    PublicAppointmentStatusSerializer,
 )
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.pagination import PageNumberPagination
@@ -135,13 +136,21 @@ class VajebaatAppointmentViewSet(viewsets.ModelViewSet):
     POST  /api/vajebaat/appointments/{id}/assign-slot/      — Assign slot (Admin only)
     PATCH /api/vajebaat/appointments/{id}/reschedule/       — Reschedule slot (Admin only)
     PATCH /api/vajebaat/appointments/{id}/cancel/           — Cancel appointment (Admin only)
+    GET   /api/vajebaat/appointments/check_status/          — Public status check (?its=X)
     """
     queryset = VajebaatAppointment.objects.select_related('slot', 'slot__date').all()
     serializer_class = VajebaatAppointmentSerializer
     pagination_class = None
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter.upper())
+        return qs
+
     def get_permissions(self):
-        if self.action == 'create':
+        if self.action in ('create', 'check_status'):
             return [AllowAny()]
         return [IsAuthenticated(), IsAdminUser()]
 
@@ -150,16 +159,88 @@ class VajebaatAppointmentViewSet(viewsets.ModelViewSet):
             return [AnonRateThrottle()]
         return []
 
-    def perform_create(self, serializer):
-        """Save appointment, then trigger WhatsApp + Sheets sync on commit."""
-        appointment = serializer.save()
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        """
+        Public booking endpoint: Allows booking without requiring Member record.
+        Handles both 'its_number'/'preferred_date'/'slot' and 'its'/'date'/'slot_id'.
+        """
+        data = request.data.copy()
+        if 'its' in data and 'its_number' not in data:
+            data['its_number'] = data['its']
+        if 'date' in data and 'preferred_date' not in data:
+            data['preferred_date'] = data['date']
+        if 'slot_id' in data and 'slot' not in data:
+            data['slot'] = data['slot_id']
+
+        its_number = str(data.get('its_number', '')).strip()
+        if not its_number:
+            return Response(
+                {'its_number': 'This field is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Lookup member silently (don't block if not found)
+        member = VajebaatMember.objects.filter(its_number=its_number).first()
+
+        # Capacity check if slot is provided
+        slot_id = data.get('slot')
+        if slot_id:
+            try:
+                slot = VajebaatSlot.objects.select_for_update().get(pk=slot_id)
+                confirmed_count = slot.appointments.filter(status='CONFIRMED').count()
+                if confirmed_count >= slot.capacity:
+                    return Response(
+                        {'slot': 'This slot is full. Please pick another.'},
+                        status=status.HTTP_409_CONFLICT
+                    )
+            except VajebaatSlot.DoesNotExist:
+                return Response({'slot': 'Slot not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        appointment = serializer.save(member=member)
+
+        # Auto-confirm if slot was selected
+        if appointment.slot:
+            appointment.status = 'CONFIRMED'
+            appointment.confirmed_at = timezone.now()
+            appointment.save(update_fields=['status', 'confirmed_at'])
+            
+            # Trigger confirmation notification
+            from .tasks import send_slot_confirmed_notification_task
+            transaction.on_commit(lambda: send_slot_confirmed_notification_task.delay(appointment.id, appointment.slot.id))
+        else:
+            # Request received notification
+            from .tasks import send_appointment_confirmation_task
+            transaction.on_commit(lambda: send_appointment_confirmation_task.delay(appointment.id))
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer, member=None):
+        """Save appointment, prioritizing user-submitted data over member record."""
+        logger.info("[Vajebaat] perform_create starting...")
+        
+        # Save directly what was submitted. 
+        # If member exists, we link it. If email is not provided, we fallback to member email.
+        email = serializer.validated_data.get('email', '')
+        if not email and member and member.email:
+            email = member.email
+            logger.info(f"[Vajebaat] No email submitted, falling back to member email: {email}")
+
+        appointment = serializer.save(
+            member=member,
+            mobile=serializer.validated_data.get('mobile', ''),
+            email=email
+        )
+        
+        logger.info(f"[Vajebaat] Appointment {appointment.id} saved. Member Linked: {member.its_number if member else 'None'}, Email: {appointment.email}")
 
         def _post_create():
-            try:
-                from .notifications import notify_request_received
-                notify_request_received(appointment)
-            except Exception as e:
-                logger.error(f"Request-received notification failed: {e}")
+            logger.info(f"[Vajebaat] Dispatching background tasks for Appointment {appointment.id}")
+            from .tasks import send_appointment_confirmation_task
+            send_appointment_confirmation_task.delay(appointment.id)
             self._trigger_sheets_sync()
 
         transaction.on_commit(_post_create)
@@ -234,14 +315,10 @@ class VajebaatAppointmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Notifications AFTER successful commit
+        # Notifications AFTER successful commit (via Celery)
         def _post_assign():
-            self._send_email_notification(appointment, slot)
-            try:
-                from .notifications import notify_slot_confirmed
-                notify_slot_confirmed(appointment, slot)
-            except Exception as e:
-                logger.error(f"Slot-confirmed notification failed: {e}")
+            from .tasks import send_slot_confirmed_notification_task
+            send_slot_confirmed_notification_task.delay(appointment.id, slot.id)
             self._trigger_sheets_sync()
 
         transaction.on_commit(_post_assign)
@@ -290,8 +367,9 @@ class VajebaatAppointmentViewSet(viewsets.ModelViewSet):
                     )
 
                 appointment.slot = new_slot
+                appointment.status = 'RESCHEDULED'
                 appointment.confirmed_at = timezone.now()
-                appointment.save(update_fields=['slot', 'confirmed_at'])
+                appointment.save(update_fields=['slot', 'status', 'confirmed_at'])
 
         except VajebaatSlot.DoesNotExist:
             return Response(
@@ -300,11 +378,9 @@ class VajebaatAppointmentViewSet(viewsets.ModelViewSet):
             )
 
         def _post_reschedule():
-            try:
-                from .notifications import notify_slot_rescheduled
-                notify_slot_rescheduled(appointment, new_slot)
-            except Exception as e:
-                logger.error(f"Reschedule notification failed: {e}")
+            logger.info(f"[WhatsApp] Reschedule notification for appointment {appointment.id}")
+            from .tasks import send_slot_rescheduled_notification_task
+            send_slot_rescheduled_notification_task.delay(appointment.id, new_slot.id)
             self._trigger_sheets_sync()
 
         transaction.on_commit(_post_reschedule)
@@ -341,11 +417,12 @@ class VajebaatAppointmentViewSet(viewsets.ModelViewSet):
             appointment.save(update_fields=['status', 'slot'])
 
         def _post_cancel():
-            try:
-                from .notifications import notify_appointment_cancelled
-                notify_appointment_cancelled(appointment, old_slot)
-            except Exception as e:
-                logger.error(f"Cancel notification failed: {e}")
+            logger.info(f"[WhatsApp] Cancel notification for appointment {appointment.id}")
+            from .tasks import send_appointment_cancelled_notification_task
+            send_appointment_cancelled_notification_task.delay(
+                appointment.id, 
+                old_slot.id if old_slot else None
+            )
             self._trigger_sheets_sync()
 
         transaction.on_commit(_post_cancel)
@@ -356,38 +433,35 @@ class VajebaatAppointmentViewSet(viewsets.ModelViewSet):
         )
 
     # ----------------------------------------------------------
-    # Helper: Email notification on slot assignment
+    # Public Status Check
     # ----------------------------------------------------------
 
-    @staticmethod
-    def _send_email_notification(appointment, slot):
-        """Send email confirmation if member has an email on file."""
-        try:
-            from .notifications import send_confirmation_email
-            from .models import VajebaatMember
-
-            date_str = slot.date.date.strftime('%d %B %Y')
-            slot_time = (
-                f"{slot.start_time.strftime('%H:%M')} – "
-                f"{slot.end_time.strftime('%H:%M')}"
+    @action(detail=False, methods=['get'], url_path='check_status',
+            permission_classes=[AllowAny])
+    def check_status(self, request):
+        """
+        GET /api/vajebaat/appointments/check_status/?its=12345678
+        Returns the status of the most recent appointment for the given ITS.
+        """
+        its = request.query_params.get('its', '').strip()
+        if not its:
+            return Response(
+                {'detail': 'ITS number is required.'},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-            try:
-                member = VajebaatMember.objects.get(
-                    its_number=appointment.its_number
-                )
-                if member.email:
-                    send_confirmation_email(
-                        to_email=member.email,
-                        name=appointment.name,
-                        date_str=date_str,
-                        slot_time=slot_time,
-                    )
-            except VajebaatMember.DoesNotExist:
-                pass
+        appointment = VajebaatAppointment.objects.filter(
+            its_number=its
+        ).select_related('slot', 'slot__date').order_by('-created_at').first()
 
-        except Exception as e:
-            logger.error(f"Email notification error for appointment {appointment.id}: {e}")
+        if not appointment:
+            return Response(
+                {'detail': 'No appointment record found for this ITS number.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = PublicAppointmentStatusSerializer(appointment)
+        return Response(serializer.data)
 
     # ----------------------------------------------------------
     # Helper: Google Sheets sync
@@ -395,12 +469,9 @@ class VajebaatAppointmentViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _trigger_sheets_sync():
-        """Auto-sync Vajebaat data to Google Sheets. Silently fails."""
-        try:
-            from .google_sheets import sync_vajebaat_members
-            sync_vajebaat_members()
-        except Exception as e:
-            logger.error(f"Auto Google Sheets sync failed: {e}")
+        """Auto-sync Vajebaat data to Google Sheets via Celery."""
+        from .tasks import sync_vajebaat_to_sheets_task
+        sync_vajebaat_to_sheets_task.delay()
 
 # ============================================================
 # NEW: Date & Slot ViewSets
@@ -414,7 +485,7 @@ class VajebaatDateViewSet(viewsets.ReadOnlyModelViewSet):
 
     Write operations removed — dates are managed via Django admin or shell.
     """
-    queryset = VajebaatDate.objects.annotate(
+    queryset = VajebaatDate.objects.filter(is_active=True).annotate(
         slot_count=Count('slots')
     )
     serializer_class = VajebaatDateSerializer
@@ -422,12 +493,14 @@ class VajebaatDateViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class VajebaatSlotViewSet(viewsets.ReadOnlyModelViewSet):
+class VajebaatSlotViewSet(viewsets.ModelViewSet):
     """
-    Admin-only read access to slots.
-    GET /api/vajebaat/slots/            — List all slots
-    GET /api/vajebaat/slots/?date_id=X  — Filter by date
-    GET /api/vajebaat/slots/{id}/       — Get slot detail
+    Admin-only access to slots.
+    GET    /api/vajebaat/slots/            — List all slots
+    GET    /api/vajebaat/slots/?date_id=X  — Filter by date
+    GET    /api/vajebaat/slots/{id}/       — Get slot detail
+    PATCH  /api/vajebaat/slots/{id}/       — Update capacity/is_active (Admin)
+    GET    /api/vajebaat/slots/{id}/users/ — List users booked in this slot (Admin)
     """
     serializer_class = VajebaatSlotSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
@@ -444,6 +517,18 @@ class VajebaatSlotViewSet(viewsets.ReadOnlyModelViewSet):
         if date_id:
             qs = qs.filter(date_id=date_id)
         return qs
+
+    @action(detail=True, methods=['get'], url_path='users',
+            permission_classes=[IsAuthenticated, IsAdminUser])
+    def users(self, request, pk=None):
+        """
+        GET /api/vajebaat/slots/{id}/users/
+        Returns all appointments booked in this specific slot.
+        """
+        slot = self.get_object()
+        appointments = slot.appointments.all().order_by('created_at')
+        serializer = VajebaatAppointmentSerializer(appointments, many=True)
+        return Response(serializer.data)
 
 
 # ============================================================
@@ -616,3 +701,63 @@ def export_csv(request):
         ])
 
     return response
+
+
+@api_view(['GET'])
+@perm_classes([IsAuthenticated, IsAdminUser])
+def export_pdf(request, pk=None):
+    """
+    GET /api/vajebaat/appointments/{id}/export-pdf/
+    Placeholder for PDF generation. Returns a simple text response for now.
+    """
+    try:
+        from .models import VajebaatAppointment
+        apt = VajebaatAppointment.objects.get(pk=pk)
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="vajebaat_{apt.its_number}.pdf"'
+        response.write(f"PDF Export for Appointment {apt.id}\nITS: {apt.its_number}\nName: {apt.name}")
+        return response
+    except Exception as e:
+        return Response({'detail': str(e)}, status=404)
+
+
+# ============================================================
+# Public: Available Slots endpoint
+# ============================================================
+
+@api_view(['GET'])
+@perm_classes([AllowAny])
+def available_slots(request):
+    """
+    GET /api/vajebaat/available-slots/?date=YYYY-MM-DD
+    Returns a simple list of slots with availability status for the public booking page.
+    Efficiently filters for active dates/slots and checks capacity.
+    """
+    date_str = request.query_params.get('date')
+    if not date_str:
+        return Response(
+            {'detail': 'Date is required.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    slots = VajebaatSlot.objects.filter(
+        date__date=date_str,
+        date__is_active=True,
+        is_active=True
+    ).annotate(
+        confirmed_count=Count(
+            'appointments',
+            filter=Q(appointments__status='CONFIRMED')
+        )
+    ).order_by('slot_number')
+
+    results = []
+    for s in slots:
+        if s.confirmed_count < s.capacity:
+            results.append({
+                'id': s.id,
+                'slot': f"{s.start_time.strftime('%H:%M')} – {s.end_time.strftime('%H:%M')}",
+                'available': True
+            })
+
+    return Response(results)

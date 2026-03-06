@@ -8,12 +8,13 @@ from .views import (
     VajebaatMemberViewSet,
     VajebaatFormViewSet,
     VajebaatAppointmentViewSet,
-    VajebaatDateViewSet,
     VajebaatSlotViewSet,
+    available_slots,
     dashboard_stats,
     members_directory,
     sync_vajebaat_sheet,
     export_csv,
+    export_pdf,
 )
 
 router = DefaultRouter()
@@ -23,11 +24,19 @@ router.register(r'appointments', VajebaatAppointmentViewSet, basename='vajebaat-
 router.register(r'dates', VajebaatDateViewSet, basename='vajebaat-date')
 router.register(r'slots', VajebaatSlotViewSet, basename='vajebaat-slot')
 
+# Admin Aliases as requested
+admin_router = DefaultRouter()
+admin_router.register(r'slots', VajebaatSlotViewSet, basename='admin-vajebaat-slot')
+admin_router.register(r'appointments', VajebaatAppointmentViewSet, basename='admin-vajebaat-appointment')
+
 urlpatterns = [
     path('dashboard-stats/', dashboard_stats, name='vajebaat-dashboard-stats'),
+    path('available-slots/', available_slots, name='vajebaat-available-slots'),
     path('members-directory/', members_directory, name='vajebaat-members-directory'),
+    path('appointments/<int:pk>/export-pdf/', export_pdf, name='vajebaat-export-pdf'),
     path('sync-sheet/', sync_vajebaat_sheet, name='vajebaat-sync-sheet'),
     path('export-csv/', export_csv, name='vajebaat-export-csv'),
+    path('admin/', include(admin_router.urls)),
     path('', include(router.urls)),
 ]
 

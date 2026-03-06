@@ -47,7 +47,7 @@ TEMPLATE_CORRECTION_DONE_V1 = "correction_done_v1"
 # New Templates
 TEMPLATE_REALLOCATION_REQ = "reallocation_req_v1"
 TEMPLATE_REALLOCATION_APPROVED = "reallocation_approved_v1"
-TEMPLATE_CANCELLATION_REQ = "cancellation_req_v1"
+TEMPLATE_CANCELLATION_REQ = "cancel_req_v1"
 TEMPLATE_CANCELLATION_APPROVED = "cancellation_approved_v1"
 
 LANGUAGE_CODE = "en"  # Default Language

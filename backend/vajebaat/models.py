@@ -142,6 +142,7 @@ class VajebaatSlot(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
     capacity = models.PositiveIntegerField(default=10)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ['date', 'slot_number']
@@ -167,6 +168,7 @@ class VajebaatAppointment(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
         ('CONFIRMED', 'Confirmed'),
+        ('RESCHEDULED', 'Rescheduled'),
         ('COMPLETED', 'Completed'),
         ('CANCELLED', 'Cancelled'),
     ]
@@ -178,6 +180,14 @@ class VajebaatAppointment(models.Model):
     remarks = models.TextField(blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     # NEW fields
+    member = models.ForeignKey(
+        'VajebaatMember',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='appointments'
+    )
+    email = models.EmailField(blank=True, default='')
     slot = models.ForeignKey(
         VajebaatSlot,
         on_delete=models.SET_NULL,

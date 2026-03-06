@@ -13,7 +13,10 @@ header("Expires: 0"); // Proxies.
     <title>Sherullah 1447H Registration</title>
     
     <!-- Expose BASE_URL to JavaScript -->
-    <script>window.BASE_URL = '<?= BASE_URL ?>';</script>
+    <script>
+        window.BASE_URL = '<?= BASE_URL ?>';
+        window.API_BASE = '<?= API_BASE ?>';
+    </script>
 
     <!-- PWA Metadata -->
     <link rel="manifest" href="<?= BASE_URL ?>/manifest.json">

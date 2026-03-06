@@ -180,8 +180,14 @@ _csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 if _csrf_origins:
     CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',')]
 
-# Also trust the API domain itself
+# Allow only configured frontend origins in production. Default to known frontend.
+FRONTEND_ORIGIN = os.getenv('FRONTEND_ORIGIN', 'https://madrasjamaatportal.org')
+
+# Also trust the API and WWW domains
 CSRF_TRUSTED_ORIGINS.append('https://api.madrasjamaatportal.org')
+CSRF_TRUSTED_ORIGINS.append('https://www.madrasjamaatportal.org')
+if FRONTEND_ORIGIN not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(FRONTEND_ORIGIN)
 
 # Ensure ALLOWED_HOSTS includes the API domain
 if 'api.madrasjamaatportal.org' not in ALLOWED_HOSTS:
@@ -195,12 +201,9 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_DOMAIN = os.getenv('CSRF_COOKIE_DOMAIN', None)
 
 
-# Allow only configured frontend origins in production. Default to known frontend.
-FRONTEND_ORIGIN = os.getenv('FRONTEND_ORIGIN', 'https://madrasjamaatportal.org')
-
-CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     FRONTEND_ORIGIN,
+    'https://www.madrasjamaatportal.org',
     'http://localhost',
     'http://127.0.0.1',
 ]
@@ -381,7 +384,7 @@ LOGGING = {
             'level': 'INFO',
         },
         'vajebaat': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'file', 'json_file'],
             'level': 'INFO',
             'propagate': False,
         },

@@ -21,6 +21,10 @@
                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                             Appointments
                         </a>
+                        <a href="<?= BASE_URL ?>/admin/vajebaat-slots.php" class="whitespace-nowrap px-3 py-1.5 rounded-md text-[#DBE2EF] hover:text-white hover:bg-white/10 text-sm font-medium transition-all flex items-center gap-2">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            Slots
+                        </a>
                         <a href="<?= BASE_URL ?>/admin/vajebaat-members.php" class="whitespace-nowrap px-3 py-1.5 rounded-md text-[#DBE2EF] hover:text-white hover:bg-white/10 text-sm font-medium transition-all flex items-center gap-2">
                             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                             Members
@@ -41,6 +45,20 @@
                     <span id="refresh-icon"></span>
                     <span>Refresh</span>
                 </button>
+                <div class="flex items-center gap-2 ml-4">
+                    <button onclick="exportData('excel')" class="px-3 py-1.5 rounded-md bg-green-600 hover:bg-green-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2">
+                         <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 3v13.5" />
+                        </svg>
+                        Excel
+                    </button>
+                    <button onclick="exportData('pdf')" class="px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2">
+                         <svg class="w-3 h-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12l4.5 4.5m0 0l4.5-4.5M12 3v13.5" />
+                        </svg>
+                        PDF
+                    </button>
+                </div>
                 <button
                     onclick="logout()"
                     class="ml-4 px-3 py-1.5 rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-100 text-sm font-medium transition-all"
@@ -308,6 +326,7 @@
     function getStatusBadge(status) {
         const styles = {
             'CONFIRMED': 'bg-green-100 text-green-700',
+            'RESCHEDULED': 'bg-amber-100 text-amber-700',
             'PENDING':   'bg-amber-100 text-amber-700',
             'CANCELLED': 'bg-red-100 text-red-700',
             'COMPLETED': 'bg-blue-100 text-blue-700',
@@ -323,13 +342,15 @@
         const esc = (s) => (s || '').replace(/'/g, "\\'");
         if (apt.status === 'PENDING') {
             return `
-                <button onclick="openSlotModal(${apt.id}, '${esc(apt.name)}', '${apt.its_number}', '${apt.preferred_date || ''}', 'assign')" class="px-3 py-1.5 rounded-lg bg-[#3F72AF] hover:bg-[#2D5A8F] text-white text-xs font-bold transition-all shadow-sm">Assign Slot</button>
+                <a href="vajebaat-appointment-detail.php?id=${apt.id}" class="px-3 py-1.5 rounded-lg bg-white border border-[#DBE2EF] hover:bg-gray-50 text-[#112D4E] text-xs font-bold transition-all shadow-sm">View</a>
+                <button onclick="openSlotModal(${apt.id}, '${esc(apt.name)}', '${apt.its_number}', '${apt.preferred_date || ''}', 'assign')" class="ml-1 px-3 py-1.5 rounded-lg bg-[#3F72AF] hover:bg-[#2D5A8F] text-white text-xs font-bold transition-all shadow-sm">Assign</button>
                 <button onclick="cancelAppointment(${apt.id}, '${esc(apt.name)}')" class="ml-1 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-all border border-red-200">Cancel</button>
             `;
         }
-        if (apt.status === 'CONFIRMED') {
+        if (apt.status === 'CONFIRMED' || apt.status === 'RESCHEDULED') {
             return `
-                <button onclick="openSlotModal(${apt.id}, '${esc(apt.name)}', '${apt.its_number}', '${apt.preferred_date || ''}', 'reschedule')" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold transition-all border border-amber-200">Reschedule</button>
+                <a href="vajebaat-appointment-detail.php?id=${apt.id}" class="px-3 py-1.5 rounded-lg bg-white border border-[#DBE2EF] hover:bg-gray-50 text-[#112D4E] text-xs font-bold transition-all shadow-sm">View</a>
+                <button onclick="openSlotModal(${apt.id}, '${esc(apt.name)}', '${apt.its_number}', '${apt.preferred_date || ''}', 'reschedule')" class="ml-1 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold transition-all border border-amber-200">Reschedule</button>
                 <button onclick="cancelAppointment(${apt.id}, '${esc(apt.name)}')" class="ml-1 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-all border border-red-200">Cancel</button>
             `;
         }
@@ -611,5 +632,14 @@
     function logout() {
         localStorage.clear();
         window.location.href = (window.BASE_URL || '') + '/admin/login.php';
+    }
+
+    async function exportData(format) {
+        // For now, since only CSV is implemented in backend, we redirect to CSV or show alert
+        if (format === 'excel' || format === 'pdf') {
+            window.location.href = window.API_BASE + '/api/vajebaat/export-csv/?format=' + format;
+        } else {
+            window.location.href = window.API_BASE + '/api/vajebaat/export-csv/';
+        }
     }
 </script>

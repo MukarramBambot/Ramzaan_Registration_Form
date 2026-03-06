@@ -117,7 +117,7 @@ class VajebaatSlotSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'date', 'date_value', 'slot_number',
             'start_time', 'end_time', 'capacity',
-            'confirmed_count', 'is_full',
+            'confirmed_count', 'is_full', 'is_active',
         ]
         read_only_fields = ['id', 'confirmed_count', 'is_full', 'date_value']
 
@@ -145,11 +145,13 @@ class VajebaatAppointmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = VajebaatAppointment
         fields = [
-            'id', 'its_number', 'name', 'mobile',
+            'id', 'its_number', 'member', 'name', 'mobile', 'email',
             'preferred_date', 'remarks', 'status',
             'slot', 'slot_info', 'confirmed_at', 'created_at'
         ]
-        read_only_fields = ['id', 'status', 'slot', 'slot_info', 'confirmed_at', 'created_at']
+        read_only_fields = [
+            'id', 'member', 'confirmed_at', 'created_at'
+        ]
 
     def validate_its_number(self, value):
         value = value.strip()
@@ -210,6 +212,40 @@ class MembersDirectorySerializer(serializers.ModelSerializer):
         if obj.slot and obj.slot.date:
             return str(obj.slot.date.date)
         return None
+
+    def get_slot_time(self, obj):
+        if obj.slot:
+            return (
+                f"{obj.slot.start_time.strftime('%H:%M')} – "
+                f"{obj.slot.end_time.strftime('%H:%M')}"
+            )
+        return None
+# ============================================================
+# Public Status Serializer
+# ============================================================
+
+class PublicAppointmentStatusSerializer(serializers.ModelSerializer):
+    """
+    Restricted read-only serializer for public status checks.
+    Masks ITS number and only returns non-sensitive fields.
+    """
+    its_masked = serializers.SerializerMethodField()
+    assigned_date = serializers.DateField(source='slot.date.date', read_only=True)
+    slot_time = serializers.SerializerMethodField()
+
+    class Meta:
+        model = VajebaatAppointment
+        fields = [
+            'name', 'its_masked', 'status', 
+            'assigned_date', 'slot_time', 'created_at'
+        ]
+        read_only_fields = ['name', 'its_masked', 'status', 'assigned_date', 'slot_time', 'created_at']
+
+    def get_its_masked(self, obj):
+        its = obj.its_number or ''
+        if len(its) >= 4:
+            return '*' * (len(its) - 4) + its[-4:]
+        return its
 
     def get_slot_time(self, obj):
         if obj.slot:

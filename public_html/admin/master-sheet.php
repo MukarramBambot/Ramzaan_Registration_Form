@@ -518,7 +518,14 @@
         `;
 
         container.innerHTML = modalHTML;
-        document.body.style.overflow = 'hidden';
+        if (typeof ScrollLockManager !== 'undefined') ScrollLockManager.lock();
+
+        // Add event listeners to all audio elements to restore scroll as a failsafe
+        container.querySelectorAll('audio').forEach(audio => {
+            audio.addEventListener('ended', () => {
+                if (typeof ScrollLockManager !== 'undefined') ScrollLockManager.unlock();
+            });
+        });
 
         // 3. Define Select Handler Helper
         window.selectAudition = async (fileId, regId) => {

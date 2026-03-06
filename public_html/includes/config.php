@@ -12,5 +12,5 @@
  * 
  * Change ONLY these values when switching environments.
  */
-define('BASE_URL', '/ramzaan');
-define('API_BASE', 'http://localhost:8000');
+define('BASE_URL', '');
+define('API_BASE', 'https://api.madrasjamaatportal.org');
