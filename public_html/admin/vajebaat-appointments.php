@@ -92,6 +92,28 @@
                 <span class="text-[#6B7280]">Available Slots Today:</span>
                 <span id="stat-available" class="font-bold text-blue-600">—</span>
             </div>
+    </div>
+
+    <!-- NEW: Vajebaat Analytics Grid -->
+    <div id="analytics-bar" class="px-6 pt-6 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-gradient-to-br from-[#112D4E] to-[#3F72AF] p-6 rounded-2xl shadow-md text-white">
+                <h3 class="text-xs font-bold opacity-80 uppercase tracking-wider mb-1">Total Vajebaat Collected</h3>
+                <p id="vajebaat-grand-total" class="text-2xl font-bold">₹ 0</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-[#DBE2EF]">
+                <h3 class="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-1">Zakat al-Mal Total</h3>
+                <p id="vajebaat-zakat" class="text-xl font-bold text-[#112D4E]">₹ 0</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-[#DBE2EF]">
+                <h3 class="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-1">Khums Total</h3>
+                <p id="vajebaat-khums" class="text-xl font-bold text-[#112D4E]">₹ 0</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-[#DBE2EF]">
+                <h3 class="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-1">Completion Rate</h3>
+                <p id="vajebaat-rate" class="text-xl font-bold text-[#3F72AF]">0%</p>
+                <p id="vajebaat-forms-count" class="text-xs text-gray-500 mt-1">0 / 0 Forms Submitted</p>
+            </div>
         </div>
     </div>
 
@@ -107,6 +129,7 @@
                             <th class="px-6 py-4 text-xs font-bold text-[#6B7280] uppercase tracking-wider">Mobile</th>
                             <th class="px-6 py-4 text-xs font-bold text-[#6B7280] uppercase tracking-wider">Preferred Date</th>
                             <th class="px-6 py-4 text-xs font-bold text-[#6B7280] uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-xs font-bold text-[#6B7280] uppercase tracking-wider">Form Status</th>
                             <th class="px-6 py-4 text-xs font-bold text-[#6B7280] uppercase tracking-wider">Slot</th>
                             <th class="px-6 py-4 text-xs font-bold text-[#6B7280] uppercase tracking-wider">Actions</th>
                         </tr>
@@ -222,14 +245,31 @@
     // ============================================================
     async function loadDashboardStats() {
         try {
-            const response = await apiFetch('/api/vajebaat/dashboard-stats/', { requireAuth: true });
-            if (response.ok) {
-                const data = await response.json();
+            const statsPromise = apiFetch('/api/vajebaat/dashboard-stats/', { requireAuth: true });
+            const analyticsPromise = apiFetch('/api/vajebaat/admin/vajebaat/analytics', { requireAuth: true });
+            
+            const [statsRes, analyticsRes] = await Promise.all([statsPromise, analyticsPromise]);
+            
+            if (statsRes.ok) {
+                const data = await statsRes.json();
                 document.getElementById('stat-total').textContent = data.total_appointments;
                 document.getElementById('stat-pending').textContent = data.pending;
                 document.getElementById('stat-confirmed').textContent = data.confirmed_today;
                 document.getElementById('stat-available').textContent = data.available_slots_today;
                 document.getElementById('stats-bar').classList.remove('hidden');
+            }
+            
+            if (analyticsRes.ok) {
+                const analytics = await analyticsRes.json();
+                const formatINR = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+
+                document.getElementById('vajebaat-grand-total').textContent = formatINR(analytics.financials.grand_total_collected);
+                document.getElementById('vajebaat-zakat').textContent = formatINR(analytics.financials.zakat_mal_total);
+                document.getElementById('vajebaat-khums').textContent = formatINR(analytics.financials.khums_total);
+                
+                document.getElementById('vajebaat-rate').textContent = `${analytics.completion_rate_percent}%`;
+                document.getElementById('vajebaat-forms-count').textContent = `${analytics.completed_forms} / ${analytics.total_appointments} Forms Generated`;
+                document.getElementById('analytics-bar').classList.remove('hidden');
             }
         } catch (err) {
             console.error('Failed to load stats:', err);
@@ -316,6 +356,7 @@
                     <td class="px-6 py-4 text-sm text-[#6B7280]">${apt.mobile || ''}</td>
                     <td class="px-6 py-4 text-sm text-[#112D4E]">${apt.preferred_date ? new Date(apt.preferred_date).toLocaleDateString('en-GB') : ''}</td>
                     <td class="px-6 py-4">${statusBadge}</td>
+                    <td class="px-6 py-4">${getFormStatusBadge(apt.form_status)}</td>
                     <td class="px-6 py-4">${slotDisplay}</td>
                     <td class="px-6 py-4">${actionBtns}</td>
                 </tr>
@@ -335,6 +376,12 @@
         return `<span class="px-2 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${cls}">${status || 'PENDING'}</span>`;
     }
 
+    function getFormStatusBadge(formStatus) {
+        const isCompleted = (formStatus || '').toUpperCase() === 'COMPLETED';
+        const cls = isCompleted ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
+        return `<span class="px-2 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${cls}">${formStatus || 'PENDING'}</span>`;
+    }
+
     // ============================================================
     // Action Buttons Builder
     // ============================================================
@@ -342,14 +389,14 @@
         const esc = (s) => (s || '').replace(/'/g, "\\'");
         if (apt.status === 'PENDING') {
             return `
-                <a href="vajebaat-appointment-detail.php?id=${apt.id}" class="px-3 py-1.5 rounded-lg bg-white border border-[#DBE2EF] hover:bg-gray-50 text-[#112D4E] text-xs font-bold transition-all shadow-sm">View</a>
+                <a href="vajebaat-form.php?id=${apt.id}" class="px-3 py-1.5 rounded-lg bg-white border border-[#DBE2EF] hover:bg-gray-50 text-[#112D4E] text-xs font-bold transition-all shadow-sm">View</a>
                 <button onclick="openSlotModal(${apt.id}, '${esc(apt.name)}', '${apt.its_number}', '${apt.preferred_date || ''}', 'assign')" class="ml-1 px-3 py-1.5 rounded-lg bg-[#3F72AF] hover:bg-[#2D5A8F] text-white text-xs font-bold transition-all shadow-sm">Assign</button>
                 <button onclick="cancelAppointment(${apt.id}, '${esc(apt.name)}')" class="ml-1 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-all border border-red-200">Cancel</button>
             `;
         }
         if (apt.status === 'CONFIRMED' || apt.status === 'RESCHEDULED') {
             return `
-                <a href="vajebaat-appointment-detail.php?id=${apt.id}" class="px-3 py-1.5 rounded-lg bg-white border border-[#DBE2EF] hover:bg-gray-50 text-[#112D4E] text-xs font-bold transition-all shadow-sm">View</a>
+                <a href="vajebaat-form.php?id=${apt.id}" class="px-3 py-1.5 rounded-lg bg-white border border-[#DBE2EF] hover:bg-gray-50 text-[#112D4E] text-xs font-bold transition-all shadow-sm">View</a>
                 <button onclick="openSlotModal(${apt.id}, '${esc(apt.name)}', '${apt.its_number}', '${apt.preferred_date || ''}', 'reschedule')" class="ml-1 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold transition-all border border-amber-200">Reschedule</button>
                 <button onclick="cancelAppointment(${apt.id}, '${esc(apt.name)}')" class="ml-1 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-all border border-red-200">Cancel</button>
             `;

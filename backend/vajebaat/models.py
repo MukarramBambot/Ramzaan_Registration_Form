@@ -226,3 +226,61 @@ def create_default_slots(sender, instance, created, **kwargs):
             for num, start, end in DEFAULT_SLOT_TIMES
         ]
         VajebaatSlot.objects.bulk_create(slots)
+
+# ============================================================
+# NEW: Legacy Member & Vajebaat Records
+# ============================================================
+class LegacyMember(models.Model):
+    """
+    Unmanaged model mapping to the existing `members` table.
+    """
+    id = models.AutoField(primary_key=True)
+    its_id = models.BigIntegerField(unique=True)
+    full_name = models.CharField(max_length=255)
+    mobile = models.CharField(max_length=50, null=True, blank=True)
+    sector = models.CharField(max_length=255, null=True, blank=True)
+    sub_sector = models.CharField(max_length=255, null=True, blank=True)
+    file_no = models.CharField(max_length=50, null=True, blank=True)
+    barcode = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'members'
+        verbose_name = 'Legacy Member'
+        verbose_name_plural = 'Legacy Members'
+
+    def __str__(self):
+        return f"{self.full_name} ({self.its_id})"
+
+
+class VajebaatRecord(models.Model):
+    """
+    Stores actual Vajebaat financial records linked to appointments.
+    """
+    appointment = models.ForeignKey(VajebaatAppointment, on_delete=models.CASCADE, related_name='vajebaat_records')
+    its_id = models.BigIntegerField(db_index=True)
+    year = models.IntegerField(default=1447)
+    
+    zakat_mal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    khums = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    nazr_muqam = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    kaffara = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    minnat_niyaz = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    najwa = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    jamiya = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    notes = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'vajebaat_records'
+        verbose_name = 'Vajebaat Record'
+        verbose_name_plural = 'Vajebaat Records'
+
+    def __str__(self):
+        return f"Vajebaat {self.year} for ITS {self.its_id}"
+

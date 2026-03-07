@@ -13,8 +13,13 @@ from .views import (
     dashboard_stats,
     members_directory,
     sync_vajebaat_sheet,
+    sync_vajebaat_sheet,
     export_csv,
     export_pdf,
+    load_vajebaat_form,
+    save_vajebaat_form,
+    download_vajebaat_pdf,
+    get_vajebaat_analytics,
 )
 
 router = DefaultRouter()
@@ -36,6 +41,10 @@ urlpatterns = [
     path('appointments/<int:pk>/export-pdf/', export_pdf, name='vajebaat-export-pdf'),
     path('sync-sheet/', sync_vajebaat_sheet, name='vajebaat-sync-sheet'),
     path('export-csv/', export_csv, name='vajebaat-export-csv'),
+    path('admin/vajebaat/appointment/<int:appointment_id>', load_vajebaat_form, name='load_vajebaat_form'),
+    path('admin/vajebaat/save', save_vajebaat_form, name='save_vajebaat_form'),
+    path('admin/vajebaat/pdf/<int:appointment_id>', download_vajebaat_pdf, name='download_vajebaat_pdf'),
+    path('admin/vajebaat/analytics', get_vajebaat_analytics, name='admin-vajebaat-analytics'),
     path('admin/', include(admin_router.urls)),
     path('', include(router.urls)),
 ]

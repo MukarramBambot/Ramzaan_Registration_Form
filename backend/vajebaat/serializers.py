@@ -5,7 +5,7 @@ Serializers for Vajebaat API endpoints.
 from rest_framework import serializers
 from .models import (
     VajebaatMember, VajebaatForm, VajebaatAppointment,
-    VajebaatDate, VajebaatSlot,
+    VajebaatDate, VajebaatSlot, VajebaatRecord, LegacyMember
 )
 
 
@@ -141,13 +141,14 @@ class VajebaatSlotBriefSerializer(serializers.ModelSerializer):
 
 class VajebaatAppointmentSerializer(serializers.ModelSerializer):
     slot_info = VajebaatSlotBriefSerializer(source='slot', read_only=True)
+    form_status = serializers.SerializerMethodField()
 
     class Meta:
         model = VajebaatAppointment
         fields = [
             'id', 'its_number', 'member', 'name', 'mobile', 'email',
             'preferred_date', 'remarks', 'status',
-            'slot', 'slot_info', 'confirmed_at', 'created_at'
+            'slot', 'slot_info', 'form_status', 'confirmed_at', 'created_at'
         ]
         read_only_fields = [
             'id', 'member', 'confirmed_at', 'created_at'
@@ -166,6 +167,12 @@ class VajebaatAppointmentSerializer(serializers.ModelSerializer):
         if value and not value.lstrip('+').isdigit():
             raise serializers.ValidationError("Enter a valid mobile number.")
         return value
+
+    def get_form_status(self, obj):
+        # We rely on prefetch_related('vajebaat_records') in the viewset View
+        if hasattr(obj, 'vajebaat_records') and obj.vajebaat_records.all():
+            return 'Completed'
+        return 'Pending'
 
 
 class VajebaatAppointmentStatusSerializer(serializers.Serializer):
@@ -254,3 +261,37 @@ class PublicAppointmentStatusSerializer(serializers.ModelSerializer):
                 f"{obj.slot.end_time.strftime('%H:%M')}"
             )
         return None
+
+# ============================================================
+# NEW: Vajebaat Record and Legacy Member Serializers
+# ============================================================
+
+class LegacyMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LegacyMember
+        fields = [
+            'its_id', 'full_name', 'mobile', 'sector', 
+            'sub_sector', 'file_no', 'barcode'
+        ]
+
+
+class VajebaatRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VajebaatRecord
+        fields = [
+            'id', 'appointment', 'its_id', 'year',
+            'zakat_mal', 'khums', 'nazr_muqam', 'kaffara', 'minnat_niyaz', 'najwa', 'jamiya',
+            'total', 'notes', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'total', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        """Ensure no negative Vajebaat amounts."""
+        amount_fields = ['zakat_mal', 'khums', 'nazr_muqam', 'kaffara', 'minnat_niyaz', 'najwa', 'jamiya']
+        for field in amount_fields:
+            val = data.get(field, 0)
+            if val is not None and val < 0:
+                raise serializers.ValidationError(
+                    {field: "Amount cannot be negative."}
+                )
+        return data

@@ -23,7 +23,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 
 from .models import (
     VajebaatMember, VajebaatForm, VajebaatAppointment,
-    VajebaatDate, VajebaatSlot,
+    VajebaatDate, VajebaatSlot, VajebaatRecord, LegacyMember
 )
 from .serializers import (
     VajebaatMemberSerializer,
@@ -138,7 +138,7 @@ class VajebaatAppointmentViewSet(viewsets.ModelViewSet):
     PATCH /api/vajebaat/appointments/{id}/cancel/           — Cancel appointment (Admin only)
     GET   /api/vajebaat/appointments/check_status/          — Public status check (?its=X)
     """
-    queryset = VajebaatAppointment.objects.select_related('slot', 'slot__date').all()
+    queryset = VajebaatAppointment.objects.select_related('slot', 'slot__date').prefetch_related('vajebaat_records').all()
     serializer_class = VajebaatAppointmentSerializer
     pagination_class = None
 
@@ -761,3 +761,192 @@ def available_slots(request):
             })
 
     return Response(results)
+# ============================================================
+# NEW: Vajebaat Form Management Endpoints
+# ============================================================
+
+@api_view(['GET'])
+@perm_classes([IsAdminUser])
+def load_vajebaat_form(request, appointment_id):
+    try:
+        appointment = VajebaatAppointment.objects.select_related('slot', 'slot__date').get(id=appointment_id)
+    except VajebaatAppointment.DoesNotExist:
+        return Response({'detail': 'Appointment not found.'}, status=404)
+
+    its_id = appointment.its_number
+    member_data = {}
+    try:
+        member = LegacyMember.objects.get(its_id=its_id)
+        member_data = {
+            "name": member.full_name,
+            "mobile": member.mobile,
+            "sector": member.sector,
+            "sub_sector": member.sub_sector,
+            "file_no": member.file_no,
+        }
+    except LegacyMember.DoesNotExist:
+        # Fallback to appointment data if not found in legacy members
+        member_data = {
+            "name": appointment.name,
+            "mobile": appointment.mobile,
+            "sector": "",
+            "sub_sector": "",
+            "file_no": "",
+        }
+
+    vajebaat_data = {
+        "zakat_mal": "", "khums": "", "nazr_muqam": "",
+        "kaffara": "", "minnat_niyaz": "", "najwa": "", "jamiya": "", "total": ""
+    }
+    
+    record = VajebaatRecord.objects.filter(appointment=appointment).first()
+    if record:
+        vajebaat_data = {
+            "zakat_mal": str(record.zakat_mal) if record.zakat_mal else "",
+            "khums": str(record.khums) if record.khums else "",
+            "nazr_muqam": str(record.nazr_muqam) if record.nazr_muqam else "",
+            "kaffara": str(record.kaffara) if record.kaffara else "",
+            "minnat_niyaz": str(record.minnat_niyaz) if record.minnat_niyaz else "",
+            "najwa": str(record.najwa) if record.najwa else "",
+            "jamiya": str(record.jamiya) if record.jamiya else "",
+            "total": str(record.total) if record.total else "",
+        }
+
+    date_str = str(appointment.preferred_date) if appointment.preferred_date else ""
+    if appointment.slot and appointment.slot.date:
+        date_str = str(appointment.slot.date.date)
+
+    slot_str = ""
+    if appointment.slot:
+        slot_str = f"{appointment.slot.start_time.strftime('%H:%M')} - {appointment.slot.end_time.strftime('%H:%M')}"
+
+    return Response({
+        "appointment": {
+            "id": appointment.id,
+            "its": appointment.its_number,
+            "date": date_str,
+            "slot": slot_str
+        },
+        "member": member_data,
+        "vajebaat": vajebaat_data
+    })
+
+
+@api_view(['POST'])
+@perm_classes([IsAdminUser])
+@ratelimit(key='ip', rate='30/m', method='POST', block=True)
+def save_vajebaat_form(request):
+    try:
+        data = request.data
+        appointment_id = data.get('appointment_id')
+        its_id = data.get('its_id')
+        year = int(data.get('year', 1447))
+        
+        try:
+            appointment = VajebaatAppointment.objects.get(id=appointment_id)
+        except VajebaatAppointment.DoesNotExist:
+            logger.warning(f"save_vajebaat_form: Appointment ID {appointment_id} not found.")
+            return Response({'detail': 'Appointment not found.'}, status=404)
+            
+        try:
+            zakat_mal = float(data.get('zakat_mal') or 0)
+            khums = float(data.get('khums') or 0)
+            nazr_muqam = float(data.get('nazr_muqam') or 0)
+            kaffara = float(data.get('kaffara') or 0)
+            minnat_niyaz = float(data.get('minnat_niyaz') or 0)
+            najwa = float(data.get('najwa') or 0)
+            jamiya = float(data.get('jamiya') or 0)
+        except ValueError as e:
+            logger.warning(f"save_vajebaat_form: Invalid numerical amounts data={data}. Err: {e}")
+            return Response({'detail': 'Invalid numerical amounts provided.'}, status=400)
+        
+        total = zakat_mal + khums + nazr_muqam + kaffara + minnat_niyaz + najwa + jamiya
+        
+        record, created = VajebaatRecord.objects.update_or_create(
+            appointment=appointment,
+            defaults={
+                'its_id': its_id,
+                'year': year,
+                'zakat_mal': zakat_mal,
+                'khums': khums,
+                'nazr_muqam': nazr_muqam,
+                'kaffara': kaffara,
+                'minnat_niyaz': minnat_niyaz,
+                'najwa': najwa,
+                'jamiya': jamiya,
+                'total': total
+            }
+        )
+        
+        logger.info(f"save_vajebaat_form: Successfully saved vajebaat for ITS={its_id}, Appt={appointment_id}, Total={total}")
+        return Response({'success': True, 'message': 'Vajebaat saved successfully', 'total': total})
+    except Exception as e:
+        logger.error(f"save_vajebaat_form error: {str(e)}", exc_info=True)
+        return Response({'detail': 'An internal server error occurred while saving.'}, status=500)
+
+
+@api_view(['GET'])
+@perm_classes([IsAdminUser])
+@ratelimit(key='ip', rate='15/m', method='GET', block=True)
+def download_vajebaat_pdf(request, appointment_id):
+    try:
+        try:
+            appointment = VajebaatAppointment.objects.select_related('slot', 'slot__date').get(id=appointment_id)
+        except VajebaatAppointment.DoesNotExist:
+            logger.warning(f"download_vajebaat_pdf: Appointment {appointment_id} not found.")
+            return Response({'detail': 'Appointment not found.'}, status=404)
+            
+        its_id = appointment.its_number
+        try:
+            member = LegacyMember.objects.get(its_id=its_id)
+        except LegacyMember.DoesNotExist:
+            member = None
+            
+        record = VajebaatRecord.objects.filter(appointment=appointment).first()
+        
+        from .pdf_generator import generate_vajebaat_pdf
+        pdf_buffer = generate_vajebaat_pdf(appointment, member, record)
+        
+        year_str = str(record.year) if record else '1447'
+        filename = f"vajebaat_{its_id}_{year_str}.pdf"
+        
+        from django.http import FileResponse
+        response = FileResponse(pdf_buffer, as_attachment=True, filename=filename)
+        return response
+    except Exception as e:
+        logger.error(f"download_vajebaat_pdf error generating PDF for Appt={appointment_id}: {str(e)}", exc_info=True)
+        return Response({'detail': 'An internal server error occurred while rendering the PDF.'}, status=500)
+
+@api_view(['GET'])
+@perm_classes([IsAdminUser])
+@ratelimit(key='ip', rate='60/m', method='GET', block=True)
+def get_vajebaat_analytics(request):
+    """
+    Returns aggregated Vajebaat data for the Admin Dashboard widgets.
+    """
+    try:
+        total_appointments = VajebaatAppointment.objects.count()
+        completed_forms = VajebaatRecord.objects.count()
+        completion_rate = round((completed_forms / total_appointments * 100), 1) if total_appointments > 0 else 0
+        
+        # Calculate sum using Django ORM Aggregation for speed
+        from django.db.models import Sum
+        aggs = VajebaatRecord.objects.aggregate(
+            total_zakat_mal=Sum('zakat_mal'),
+            total_khums=Sum('khums'),
+            grand_total=Sum('total')
+        )
+        
+        return Response({
+            'total_appointments': total_appointments,
+            'completed_forms': completed_forms,
+            'completion_rate_percent': completion_rate,
+            'financials': {
+                'grand_total_collected': aggs['grand_total'] or 0,
+                'zakat_mal_total': aggs['total_zakat_mal'] or 0,
+                'khums_total': aggs['total_khums'] or 0
+            }
+        })
+    except Exception as e:
+        logger.error(f"get_vajebaat_analytics error computing stats: {str(e)}", exc_info=True)
+        return Response({'detail': 'Failed to calculate analytics.'}, status=500)
